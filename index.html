@@ -848,7 +848,7 @@ function makeQRDataUrl(text) {
     qr.addData(text);
     qr.make();
     const modules = qr.getModuleCount();
-    const cellPx = 4;
+    const cellPx = 6;   // kattaroq piksel — o'qish oson
     const sz = modules * cellPx;
     const canvas = document.createElement('canvas');
     canvas.width = sz; canvas.height = sz;
@@ -1028,9 +1028,9 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h, qrImg) {
   c1y += 18; // kattaroq Roll No uchun ko'proq joy
 
   // QR kod (o'ng tomonda, Roll No yonida) — skaner shu QR ni o'qiydi
-  const qrSize = 22;
-  const qrX = x + w - qrSize - 4;
-  const qrY = c1y - 16;
+  const qrSize = 38;                          // katta QR — skanerga qulay
+  const qrX = x + w - qrSize - 3;
+  const qrY = y + 3;                          // yuqori o'ng burchak
   if (qrImg) {
     pdf.addImage(qrImg, 'PNG', qrX, qrY, qrSize, qrSize);
   } else {
@@ -1216,11 +1216,15 @@ function stopCam() {
 
 function scanFrame() {
   const v=document.getElementById('camVid'); if(v.readyState<2) return;
-  const c=document.getElementById('camCvs'); c.width=v.videoWidth; c.height=v.videoHeight;
+  const c=document.getElementById('camCvs');
+  c.width=v.videoWidth; c.height=v.videoHeight;
   const ctx=c.getContext('2d'); ctx.drawImage(v,0,0);
   const d=ctx.getImageData(0,0,c.width,c.height);
-  const qr=jsQR(d.data,d.width,d.height);
-  if(qr) parseQR(qr.data);
+  const qr=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});
+  if(qr){
+    parseQR(qr.data);
+    toast('✅ QR aniqlandi!');
+  }
 }
 
 function uploadImg(input) {
@@ -1272,6 +1276,7 @@ function checkNow() {
   const cid=document.getElementById('scCls').value, tid=document.getElementById('scTest').value;
   const sid=document.getElementById('scStu').value;
   if(!cid||!tid){toast('Sinf va testni tanlang');return;}
+  if(!sid){toast('⚠️ O\'quvchini tanlang — QR ni skanerlang yoki ro\'yxatdan tanlang');return;}
   const t=S.classes[cid]?.tests?.[tid]; if(!t){toast('Test topilmadi');return;}
   const given={};
   for(let i=1;i<=t.count;i++){const el=document.getElementById('m_'+i);if(el?.value.trim())given[i]=el.value.trim().toUpperCase();}
