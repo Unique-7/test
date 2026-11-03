@@ -116,7 +116,7 @@ tr:hover td{background:#fafbff}
 .mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
   align-items:center;justify-content:center;padding:20px}
 .mbg.open{display:flex}
-.md{background:#fff;border-radius:var(--rad);padding:20px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto}
+.md{background:#fff;border-radius:var(--rad);padding:20px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto}
 .md h3{font-size:15px;font-weight:700;margin-bottom:12px}
 .sync{position:fixed;top:58px;right:10px;background:var(--g);color:#fff;font-size:11px;
   padding:3px 9px;border-radius:10px;opacity:0;transition:.4s;z-index:300}
@@ -124,6 +124,15 @@ tr:hover td{background:#fafbff}
 .note{background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:12px;font-size:12px;margin-bottom:12px}
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
 .bgs{background:#e6f4ea;color:#137333}.bgy{background:#fef7e0;color:#b06000}.bgr{background:#fce8e6;color:#a50e0e}
+/* Test list cards */
+.tcard{background:var(--ps);border-radius:10px;padding:11px 14px;margin-bottom:7px;cursor:pointer;
+  border:2px solid transparent;transition:.2s;display:flex;align-items:center;gap:10px}
+.tcard:hover,.tcard.sel{border-color:var(--p)}
+.tcard-name{font-size:13px;font-weight:700;color:var(--p)}
+.tcard-info{font-size:11px;color:var(--m);margin-top:2px}
+.tcard-btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+/* Block rows */
+.block-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:end;margin-bottom:7px}
 </style>
 </head>
 <body>
@@ -142,8 +151,7 @@ tr:hover td{background:#fafbff}
 <!-- ═══ CLASSES ═══ -->
 <div class="page on" id="page-classes">
   <div id="demoNote" class="note" style="display:none">
-    ⚠️ <strong>Demo rejim</strong> — ma'lumotlar faqat bu qurilmada.
-    Real-vaqt sync uchun Firebase ulang.
+    ⚠️ <strong>Demo rejim</strong> — ma'lumotlar faqat bu qurilmada. Real-vaqt sync uchun Firebase ulang.
   </div>
   <div class="card">
     <div class="ct">🏫 Sinflar
@@ -156,14 +164,18 @@ tr:hover td{background:#fafbff}
   <div class="card" id="clsDetail" style="display:none">
     <div class="ct">
       <span id="clsName">—</span>
-      <button class="btn bo bx" style="margin-left:auto" onclick="openMd('mdStu')">+ O'quvchi</button>
-      <button class="btn bp bs" onclick="startNewTest()">▶ Yangi test</button>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn bo bx" onclick="openMd('mdStu')">+ O'quvchi</button>
+        <button class="btn bp bs" onclick="startNewTest()">▶ Yangi test</button>
+      </div>
     </div>
+    <!-- Students -->
     <div style="margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:5px">O'QUVCHILAR:</div>
       <div id="stuChips"></div>
     </div>
     <div class="sep"></div>
+    <!-- Tests list -->
     <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:7px">TESTLAR:</div>
     <div id="testList"></div>
   </div>
@@ -172,7 +184,7 @@ tr:hover td{background:#fafbff}
 <!-- ═══ TEST SETUP ═══ -->
 <div class="page" id="page-test">
   <div class="card">
-    <div class="ct">⚙️ Test yaratish</div>
+    <div class="ct">⚙️ Test yaratish / tahrirlash</div>
     <label>Test nomi (masalan: 1-CHSB, 2-BSB, Nazorat-1)</label>
     <input id="tName" placeholder="1-CHSB" value="1-CHSB">
     <div class="g2">
@@ -195,19 +207,25 @@ tr:hover td{background:#fafbff}
         <input id="tYear" value="2025-2026">
       </div>
     </div>
-    <label>Savollar soni</label>
-    <input id="tCount" type="number" value="15" min="1" max="60" oninput="renderCorrGrid()">
   </div>
 
+  <!-- Ball bloklari -->
   <div class="card">
     <div class="ct">🎯 Ball bloklari</div>
+    <p style="font-size:12px;color:var(--m);margin-bottom:9px">
+      Har bir savollar oralig'i uchun ball kiriting. Blokni to'ldirganingizda keyingi blok avtomatik qo'shiladi.
+    </p>
     <div id="blockList"></div>
     <button class="btn bo bs" onclick="addBlock()" style="margin-top:7px">+ Blok qo'shish</button>
+    <p style="font-size:11px;color:var(--m);margin-top:8px">
+      Jami savollar: <strong id="totalQCount">0</strong> ta &nbsp;|&nbsp; Maksimal ball: <strong id="totalMaxBall">0</strong>
+    </p>
   </div>
 
+  <!-- To'g'ri javoblar — test sahifasida ham ko'rish mumkin -->
   <div class="card">
     <div class="ct">✅ To'g'ri javoblar</div>
-    <p style="font-size:12px;color:var(--m);margin-bottom:9px">A, B, C, D</p>
+    <p style="font-size:12px;color:var(--m);margin-bottom:9px">A, B, C, D — har savol uchun to'g'ri javob kiriting</p>
     <div class="ag" id="corrGrid"></div>
   </div>
 
@@ -222,8 +240,7 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="ct">📷 Test Tekshirish</div>
     <div class="mb">
-      📌 Titul varoqni kameraga tutib tekshiring. Savol varaqasini skaner qilgach, tizim
-      <strong>o'quvchini avtomatik aniqlaydi</strong> va natijani ko'rsatadi.
+      📌 Titul varoqni kameraga tuting. Tizim <strong>ID orqali o'quvchini avtomatik aniqlaydi</strong> va natijani ko'rsatadi.
     </div>
 
     <div class="g2" style="margin-bottom:10px">
@@ -233,7 +250,7 @@ tr:hover td{background:#fafbff}
       </div>
       <div>
         <label>Test</label>
-        <select id="scTest" onchange="scLoadStudents()"></select>
+        <select id="scTest" onchange="scLoadAnswers()"></select>
       </div>
     </div>
 
@@ -261,7 +278,9 @@ tr:hover td{background:#fafbff}
   </div>
 
   <div class="card">
-    <div class="ct">✏️ Javoblar</div>
+    <div class="ct">✏️ Javoblar
+      <span id="scTestInfo" style="font-size:11px;font-weight:400;color:var(--m);margin-left:6px"></span>
+    </div>
     <p style="font-size:11px;color:var(--m);margin-bottom:8px">Skaner aniqlamasa qo'lda kiriting:</p>
     <div class="ag" id="manGrid"></div>
     <div class="sep"></div>
@@ -327,13 +346,29 @@ tr:hover td{background:#fafbff}
     </div>
   </div>
 </div>
+<!-- Test answers modal (from test list) -->
+<div class="mbg" id="mdAns">
+  <div class="md">
+    <h3 id="mdAnsTitle">✅ To'g'ri javoblar</h3>
+    <div class="ag" id="mdAnsGrid" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="sep"></div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn bg" onclick="saveAnsModal()">✓ Saqlash</button>
+      <button class="btn bo" onclick="closeMd('mdAns')">Bekor</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-const S = { classes:{}, curCls:null, curTest:null, cam:null, scanTick:null, pendRes:null };
+const S = {
+  classes:{}, curCls:null, curTest:null,
+  cam:null, scanTick:null, pendRes:null,
+  mdAnsClsId:null, mdAnsTestId:null
+};
 
 // ════════════════════════════════════════════════
 // INIT
@@ -348,7 +383,7 @@ window.addEventListener('db-ready', async () => {
     if (S.curCls && S.classes[S.curCls]) renderClsDetail(S.curCls);
   });
   initBlocks();
-  renderCorrGrid();
+  updateBlockSummary();
 });
 
 // ════════════════════════════════════════════════
@@ -362,7 +397,7 @@ function goTo(id, btn) {
   else document.querySelectorAll('.nt').forEach(t=>{
     if(t.getAttribute('onclick')?.includes("'"+id+"'")) t.classList.add('on');
   });
-  if (id==='scanner') { fillScSelects(); renderManGrid(); }
+  if (id==='scanner') { fillScSelects(); }
   if (id==='results') { fillResSelects(); renderRes(); }
 }
 
@@ -373,7 +408,7 @@ function renderClsGrid() {
   const el = document.getElementById('clsGrid');
   const keys = Object.keys(S.classes||{});
   if (!keys.length) {
-    el.innerHTML='<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q</p>';
+    el.innerHTML='<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q — "+ Yangi sinf" tugmasini bosing</p>';
     return;
   }
   el.innerHTML = keys.map(k => {
@@ -406,19 +441,26 @@ function renderClsDetail(id) {
 
   const tests = Object.entries(c.tests||{});
   const tl = document.getElementById('testList');
-  if (!tests.length) { tl.innerHTML='<p style="font-size:12px;color:var(--m)">Hali test yo\'q</p>'; return; }
-  tl.innerHTML = `<div class="tw"><table>
-    <tr><th>Nom</th><th>Fan</th><th>Sana</th><th>N</th><th>Natija</th><th></th></tr>
-    ${tests.map(([tid,t])=>{
-      const resCount = Object.keys(t.results||{}).length;
-      return `<tr>
-        <td><strong>${t.name||t.type}</strong></td>
-        <td>${t.subject}</td><td>${fmtD(t.date)}</td><td>${t.count}</td>
-        <td><span class="badge bgs">${resCount} ta</span></td>
-        <td><button class="btn bo bx" onclick="loadTest('${id}','${tid}')">Yuklash</button></td>
-      </tr>`;
-    }).join('')}
-  </table></div>`;
+  if (!tests.length) {
+    tl.innerHTML='<p style="font-size:12px;color:var(--m)">Hali test yo\'q — "▶ Yangi test" tugmasini bosing</p>';
+    return;
+  }
+  tl.innerHTML = tests.map(([tid,t])=>{
+    const resCount = Object.keys(t.results||{}).length;
+    const stuCount = Object.keys(c.students||{}).length;
+    return `<div class="tcard" onclick="loadTest('${id}','${tid}')">
+      <div>
+        <div class="tcard-name">${t.name||t.subject}</div>
+        <div class="tcard-info">📚 ${t.subject} &nbsp;·&nbsp; 📅 ${fmtD(t.date)} &nbsp;·&nbsp; ${t.count} ta savol</div>
+        <div class="tcard-info">✅ ${resCount}/${stuCount} tekshirilgan</div>
+      </div>
+      <div class="tcard-btns" onclick="event.stopPropagation()">
+        <button class="btn bp bx" onclick="quickScan('${id}','${tid}')">📷 Tekshir</button>
+        <button class="btn bo bx" onclick="openAnsModal('${id}','${tid}')">✏️ Javoblar</button>
+        <button class="btn bo bx" onclick="printOMRTest('${id}','${tid}')">📄 PDF</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function openMd(id) { document.getElementById(id).classList.add('open'); }
@@ -430,6 +472,8 @@ async function createCls() {
   const teacher = document.getElementById('mClsT').value.trim();
   if (!name) { toast('Sinf nomini kiriting'); return; }
   await window.DB.push('classes', {name, teacher, students:{}, tests:{}});
+  document.getElementById('mClsN').value='';
+  document.getElementById('mClsT').value='';
   closeMd('mdCls');
   syncAnim(); toast(`✓ ${name} yaratildi`);
 }
@@ -446,6 +490,7 @@ async function addStudents() {
     await window.DB.write(`classes/${S.curCls}/students/${id}`,{name,id});
     n++;
   }
+  document.getElementById('mStuIn').value='';
   closeMd('mdStu'); syncAnim(); toast(`✓ ${n} nafar qo'shildi`);
 }
 
@@ -455,29 +500,69 @@ async function delStu(cid, sid) {
 }
 
 // ════════════════════════════════════════════════
-// TEST SETUP
+// TEST SETUP — blocks auto-expand
 // ════════════════════════════════════════════════
 function initBlocks() {
   document.getElementById('blockList').innerHTML='';
-  addBlock(1,5,2); addBlock(6,15,2.7);
+  addBlock(1,5,2); addBlock(6,10,2.7);
 }
 
-function addBlock(f=1,t=5,s=2) {
-  const d=document.createElement('div');
-  d.className='block-row';
-  d.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:end;margin-bottom:7px';
-  d.innerHTML=`
-    <div><label style="margin-top:0">Boshlanish</label><input type="number" class="bf" value="${f}" min="1"></div>
-    <div><label style="margin-top:0">Tugash</label><input type="number" class="bt" value="${t}" min="1"></div>
-    <div><label style="margin-top:0">Ball</label><input type="number" class="bs2" value="${s}" step="0.1" min="0"></div>
-    <div style="padding-bottom:0"><button class="btn br bx" onclick="this.closest('.block-row').remove()">✕</button></div>`;
+function addBlock(f, t, s) {
+  // auto-calculate start from last block
+  if (f === undefined) {
+    const rows = document.querySelectorAll('.block-row');
+    let lastTo = 0;
+    rows.forEach(r => { const v = +r.querySelector('.bt').value; if(v>lastTo) lastTo=v; });
+    f = lastTo + 1; t = f + 4; s = 2;
+  }
+  const d = document.createElement('div');
+  d.className = 'block-row';
+  d.innerHTML = `
+    <div><label style="margin-top:0">Boshlanish</label><input type="number" class="bf" value="${f}" min="1" oninput="updateBlockSummary()"></div>
+    <div><label style="margin-top:0">Tugash</label><input type="number" class="bt" value="${t}" min="1" oninput="onBlockChange(this)"></div>
+    <div><label style="margin-top:0">Ball</label><input type="number" class="bs2" value="${s||2}" step="0.1" min="0" oninput="updateBlockSummary()"></div>
+    <div style="padding-bottom:0"><button class="btn br bx" onclick="this.closest('.block-row').remove();updateBlockSummary()">✕</button></div>`;
   document.getElementById('blockList').appendChild(d);
+  updateBlockSummary();
+}
+
+function onBlockChange(input) {
+  // when user finishes filling a block, auto-add next if it's the last block
+  const rows = Array.from(document.querySelectorAll('.block-row'));
+  const lastRow = rows[rows.length - 1];
+  if (input.closest('.block-row') === lastRow) {
+    const val = +input.value;
+    if (val > 0) addBlock(val+1, val+5, 2);
+  }
+  updateBlockSummary();
+}
+
+function updateBlockSummary() {
+  const blocks = getBlocks();
+  if (!blocks.length) {
+    document.getElementById('totalQCount').textContent = '0';
+    document.getElementById('totalMaxBall').textContent = '0';
+    renderCorrGridFromBlocks();
+    return;
+  }
+  const maxQ = Math.max(...blocks.map(b => b.to));
+  const maxBall = getTotalMax(maxQ, blocks);
+  document.getElementById('totalQCount').textContent = maxQ;
+  document.getElementById('totalMaxBall').textContent = maxBall.toFixed(1);
+  renderCorrGridFromBlocks();
+}
+
+function renderCorrGridFromBlocks() {
+  const blocks = getBlocks();
+  if (!blocks.length) { document.getElementById('corrGrid').innerHTML=''; return; }
+  const n = Math.max(...blocks.map(b=>b.to));
+  renderCorrGrid(n);
 }
 
 function getBlocks() {
   return Array.from(document.querySelectorAll('.block-row')).map(r=>({
     from:+r.querySelector('.bf').value, to:+r.querySelector('.bt').value, score:+r.querySelector('.bs2').value
-  }));
+  })).filter(b=>b.from>0&&b.to>=b.from);
 }
 
 function getScore(q, blocks) {
@@ -486,12 +571,12 @@ function getScore(q, blocks) {
 }
 function getTotalMax(n, blocks) { let t=0; for(let i=1;i<=n;i++) t+=getScore(i,blocks); return t; }
 
-function renderCorrGrid() {
-  const n = +document.getElementById('tCount').value||15;
+function renderCorrGrid(count) {
+  const n = count || (+document.getElementById('tCount')?.value || 15);
   const g = document.getElementById('corrGrid');
-  const prev={};
-  g.querySelectorAll('input').forEach((inp,i)=>{if(inp.value)prev[i+1]=inp.value;});
-  g.innerHTML='';
+  const prev = {};
+  g.querySelectorAll('input').forEach((inp,i)=>{ if(inp.value) prev[i+1]=inp.value; });
+  g.innerHTML = '';
   for(let i=1;i<=n;i++){
     const d=document.createElement('div'); d.className='ac';
     d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ca_${i}" value="${prev[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
@@ -499,201 +584,298 @@ function renderCorrGrid() {
   }
 }
 
-function getCorrAnswers() {
-  const n=+document.getElementById('tCount').value||15, ca={};
-  for(let i=1;i<=n;i++){const el=document.getElementById('ca_'+i);if(el?.value)ca[i]=el.value.trim().toUpperCase();}
+function getCorrAnswers(count) {
+  const n = count || getBlocks().reduce((m,b)=>Math.max(m,b.to),0);
+  const ca = {};
+  for(let i=1;i<=n;i++){const el=document.getElementById('ca_'+i);if(el?.value) ca[i]=el.value.trim().toUpperCase();}
   return ca;
 }
 
 function getTestCfg() {
+  const blocks = getBlocks();
+  const maxQ = blocks.length ? Math.max(...blocks.map(b=>b.to)) : 0;
   return {
     name: document.getElementById('tName').value.trim()||'Test',
     subject: document.getElementById('tSubj').value.trim()||'Fan',
     classId: document.getElementById('tCls').value,
     date: document.getElementById('tDate').value,
     year: document.getElementById('tYear').value.trim(),
-    count: +document.getElementById('tCount').value||15,
-    blocks: getBlocks(),
-    correctAnswers: getCorrAnswers(),
+    count: maxQ,
+    blocks: blocks,
+    correctAnswers: getCorrAnswers(maxQ),
     createdAt: Date.now()
   };
 }
 
 function startNewTest() {
-  if (S.curCls) document.getElementById('tCls').value = S.curCls;
-  goTo('test'); renderCorrGrid();
+  S.curTest = null;
+  if (S.curCls) { fillClsSelects(); document.getElementById('tCls').value = S.curCls; }
+  initBlocks();
+  goTo('test');
+  document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'test'")) t.classList.add('on'); });
 }
 
 function loadTest(clsId, testId) {
   S.curCls=clsId; S.curTest=testId;
   const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
+  fillClsSelects();
   document.getElementById('tName').value=t.name||t.type||'';
   document.getElementById('tSubj').value=t.subject;
   document.getElementById('tCls').value=clsId;
   document.getElementById('tDate').value=t.date;
-  document.getElementById('tYear').value=t.year;
-  document.getElementById('tCount').value=t.count;
+  document.getElementById('tYear').value=t.year||'2025-2026';
   document.getElementById('blockList').innerHTML='';
   (t.blocks||[]).forEach(b=>addBlock(b.from,b.to,b.score));
-  renderCorrGrid();
-  setTimeout(()=>{ Object.entries(t.correctAnswers||{}).forEach(([q,a])=>{ const el=document.getElementById('ca_'+q); if(el)el.value=a; }); },60);
-  goTo('test'); toast(`✓ "${t.name||t.subject}" yuklandi`);
+  const n=t.count||15;
+  renderCorrGrid(n);
+  setTimeout(()=>{ Object.entries(t.correctAnswers||{}).forEach(([q,a])=>{ const el=document.getElementById('ca_'+q); if(el)el.value=a; }); updateBlockSummary(); },80);
+  goTo('test');
+  toast(`✓ "${t.name||t.subject}" yuklandi`);
 }
 
 async function saveTest() {
   const cfg=getTestCfg();
   if(!cfg.classId){toast('Sinf tanlang');return;}
-  const tid = S.curTest || await window.DB.push(`classes/${cfg.classId}/tests`, cfg);
-  if(S.curTest) await window.DB.write(`classes/${cfg.classId}/tests/${S.curTest}`, cfg);
-  S.curTest=tid; syncAnim(); toast(`✓ "${cfg.name}" saqlandi`);
+  if(!cfg.count){toast('Blok kiriting');return;}
+  if(S.curTest) {
+    await window.DB.write(`classes/${cfg.classId}/tests/${S.curTest}`, cfg);
+  } else {
+    const tid = await window.DB.push(`classes/${cfg.classId}/tests`, cfg);
+    S.curTest=tid;
+  }
+  syncAnim(); toast(`✓ "${cfg.name}" saqlandi`);
+}
+
+// Quick scan from class list
+function quickScan(clsId, testId) {
+  S.curCls=clsId; S.curTest=testId;
+  fillScSelects(clsId, testId);
+  goTo('scanner');
+  document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'scanner'")) t.classList.add('on'); });
+}
+
+// Answers modal (from test card)
+function openAnsModal(clsId, testId) {
+  S.mdAnsClsId=clsId; S.mdAnsTestId=testId;
+  const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
+  document.getElementById('mdAnsTitle').textContent=`✅ Javoblar — ${t.name||t.subject}`;
+  const n=t.count||15;
+  const g=document.getElementById('mdAnsGrid'); g.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const d=document.createElement('div'); d.className='ac';
+    d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ma_${i}" value="${t.correctAnswers?.[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
+    g.appendChild(d);
+  }
+  openMd('mdAns');
+}
+
+async function saveAnsModal() {
+  const cid=S.mdAnsClsId, tid=S.mdAnsTestId;
+  const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
+  const n=t.count||15, ca={};
+  for(let i=1;i<=n;i++){const el=document.getElementById('ma_'+i);if(el?.value)ca[i]=el.value.trim().toUpperCase();}
+  t.correctAnswers=ca;
+  await window.DB.write(`classes/${cid}/tests/${tid}/correctAnswers`,ca);
+  closeMd('mdAns'); syncAnim(); toast('✓ Javoblar saqlandi');
 }
 
 // ════════════════════════════════════════════════
-// OMR PDF — full A4, big bubbles, QR-style ID
+// OMR PDF — full A4, big bubbles, text ID (no QR)
 // ════════════════════════════════════════════════
 function printOMR() {
   const cfg=getTestCfg();
   if(!cfg.classId){toast('Sinf tanlang');return;}
+  if(!cfg.count){toast('Blok kiriting');return;}
   const cls=S.classes[cfg.classId]; if(!cls){toast('Sinf topilmadi');return;}
   const stus=Object.values(cls.students||{}); if(!stus.length){toast('O\'quvchilar yo\'q');return;}
+  genOMRPdf(cfg, cls, stus);
+}
 
+function printOMRTest(clsId, testId) {
+  const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
+  const cls=S.classes[clsId]; if(!cls) return;
+  const stus=Object.values(cls.students||{}); if(!stus.length){toast('O\'quvchilar yo\'q');return;}
+  genOMRPdf(t, cls, stus);
+}
+
+function genOMRPdf(cfg, cls, stus) {
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({format:'a4',orientation:'portrait',unit:'mm'});
-  stus.forEach((stu,i)=>{ if(i>0)pdf.addPage(); drawOMR(pdf,cfg,cls,stu,6,6,198,285); });
+  stus.forEach((stu,i)=>{ if(i>0) pdf.addPage(); drawOMR(pdf,cfg,cls,stu,4,4,202,289); });
   pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
   toast(`✓ ${stus.length} ta titul varoq`);
 }
 
-function drawOMR(pdf,cfg,cls,stu,x,y,w,h) {
+function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   const n=cfg.count, OPTS=['A','B','C','D'];
   const totalMax=getTotalMax(n,cfg.blocks);
-  const M=5; // corner marker size
+  const M=6; // corner marker size mm
 
-  // BG
+  // White background + border
   pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.4); pdf.rect(x,y,w,h,'S');
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5); pdf.rect(x,y,w,h,'S');
 
-  // Corner black squares
+  // ── Corner alignment markers ──
   [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]].forEach(([cx,cy])=>{
     pdf.setFillColor(0,0,0); pdf.rect(cx,cy,M,M,'F');
     pdf.setFillColor(255,255,255); pdf.rect(cx+1,cy+1,M-2,M-2,'F');
     pdf.setFillColor(0,0,0); pdf.rect(cx+1.8,cy+1.8,M-3.6,M-3.6,'F');
   });
 
-  // Header lines
-  let hy=y+M+3;
-  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text('ISM FAMILYA :', x+M+1, hy+3);
-  pdf.setLineWidth(0.4); pdf.setDrawColor(0,0,0);
-  pdf.line(x+M+32, hy+3.5, x+w-M-2, hy+3.5);
-  hy+=8;
-  pdf.text(`FAN: ${cfg.subject}`, x+M+1, hy+3);
-  pdf.text(`SINF: ${cls.name}`, x+w/2, hy+3);
-  pdf.text(`TUR: ${cfg.name}`, x+M+1, hy+9);
-  pdf.text(`SANA: ${fmtD(cfg.date)}`, x+w/2, hy+9);
-  hy+=13;
+  // ── Header ──
+  let hy = y + M + 4;
+  const hx = x + M + 2;
+  const hw = w - M*2 - 4;
 
-  // Thick separator
-  pdf.setFillColor(0,0,0); pdf.rect(x+M, hy, w-M*2, 1.2, 'F'); hy+=4;
+  // ISM FAMILYA row — big line
+  pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text('ISM FAMILYA:', hx, hy+3);
+  pdf.setLineWidth(0.5); pdf.setDrawColor(0,0,0);
+  pdf.line(hx+36, hy+3.5, hx+hw-2, hy+3.5);
+  hy += 9;
 
-  // OMR grid — auto-fit to fill page
-  const botH=22; // space for bottom bar
-  const availH=y+h-botH-hy;
-  const nCols=n<=20?2:3;
-  const rowsPerCol=Math.ceil(n/nCols);
-  const rowH=Math.max(8, Math.min(13, availH/(rowsPerCol+1)));
-  const bR=Math.min(4.2,(rowH-2)/2); // bubble radius
-  const bStep=bR*2+2.2;
-  const colW=(w-M*2-4)/nCols;
-  const numW=11;
+  // Info row
+  pdf.setFontSize(8); pdf.setFont('helvetica','normal');
+  pdf.text(`FAN: ${cfg.subject}`, hx, hy+3);
+  pdf.text(`SINF: ${cls.name}`, hx+hw*0.4, hy+3);
+  pdf.text(`TUR: ${cfg.name}`, hx, hy+9);
+  pdf.text(`SANA: ${fmtD(cfg.date)}`, hx+hw*0.4, hy+9);
+  hy += 14;
 
-  // Col headers
-  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(40,40,40);
+  // Separator
+  pdf.setFillColor(0,0,0); pdf.rect(hx, hy, hw, 1.5, 'F'); hy += 4;
+
+  // ── OMR grid filling remaining space ──
+  const bottomBarH = 20;
+  const availH = (y + h) - bottomBarH - hy - 2;
+
+  // Choose columns: 2 for <=20, 3 for more
+  const nCols = n <= 20 ? 2 : 3;
+  const rowsPerCol = Math.ceil(n / nCols);
+  const rowH = Math.max(7.5, Math.min(14, availH / (rowsPerCol + 1)));
+  const bR = Math.min(4.8, (rowH - 2.5) / 2); // bubble radius — bigger
+  const bStep = bR * 2 + 2.5;
+  const colW = hw / nCols;
+  const numW = 11;
+
+  // Column headers
+  pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(30,30,30);
   for(let c=0;c<nCols;c++){
-    const cx=x+M+2+c*colW;
-    if(c>0){ pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3); pdf.line(cx-2,hy,cx-2,hy+availH); }
-    OPTS.forEach((o,oi)=>{ pdf.text(o,cx+numW+oi*bStep+bR+3,hy+4,{align:'center'}); });
+    const cx = hx + c*colW;
+    if(c>0){
+      pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3);
+      pdf.line(cx-1, hy, cx-1, hy+availH);
+    }
+    OPTS.forEach((o,oi)=>{
+      pdf.text(o, cx+numW+oi*bStep+bR, hy+4, {align:'center'});
+    });
   }
+  hy += 6;
 
+  // Rows
   for(let i=1;i<=n;i++){
-    const col=Math.floor((i-1)/rowsPerCol), row=(i-1)%rowsPerCol;
-    const cx=x+M+2+col*colW, qy=hy+5+(row+1)*rowH;
-    if(row%2===0){ pdf.setFillColor(247,249,255); pdf.rect(cx,qy-rowH/2,colW-3,rowH,'F'); }
+    const col = Math.floor((i-1)/rowsPerCol);
+    const row = (i-1) % rowsPerCol;
+    const cx = hx + col*colW;
+    const qy = hy + row*rowH + rowH*0.5;
+
+    // Alternating row bg
+    if(row%2===0){
+      pdf.setFillColor(245,248,255);
+      pdf.rect(cx, qy-rowH*0.5+0.5, colW-2, rowH-1, 'F');
+    }
+
+    // Question number
     pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-    pdf.text(String(i),cx+numW-1,qy+2.5,{align:'right'});
-    const sc=getScore(i,cfg.blocks);
-    pdf.setFontSize(5.5); pdf.setTextColor(150,150,150);
-    pdf.text(`${sc}b`,cx+numW+0.5,qy-1.5);
+    pdf.text(String(i), cx+numW-1, qy+2.5, {align:'right'});
+
+    // Ball label
+    const sc = getScore(i, cfg.blocks);
+    pdf.setFontSize(5.5); pdf.setTextColor(140,140,140);
+    pdf.text(`${sc}b`, cx+numW+1, qy-1.5);
+
+    // Bubbles — big and clear
     OPTS.forEach((_,oi)=>{
-      const bx=cx+numW+oi*bStep+bR+3;
-      pdf.setFillColor(255,255,255); pdf.setDrawColor(20,20,20); pdf.setLineWidth(0.65);
-      pdf.circle(bx,qy,bR,'FD');
+      const bx = cx + numW + oi*bStep + bR;
+      pdf.setFillColor(255,255,255);
+      pdf.setDrawColor(30,30,30);
+      pdf.setLineWidth(0.7);
+      pdf.circle(bx, qy, bR, 'FD');
     });
   }
 
-  // Bottom bar
-  const botY=y+h-botH;
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.6); pdf.line(x+M,botY,x+w-M,botY);
-  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(`Jami ball: __________ / ${totalMax.toFixed(1)}`,x+M+2,botY+7);
-  pdf.text(`Foiz: __________% `,x+M+2,botY+14);
+  // ── Bottom bar ──
+  const botY = y + h - bottomBarH;
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.8);
+  pdf.line(x+M, botY, x+w-M, botY);
 
-  // QR-style ID box (right side of bottom)
-  const qx=x+w-M-38, qy2=botY+1, qw=36, qh=botH-3;
-  pdf.setFillColor(255,255,255); pdf.rect(qx,qy2,qw,qh,'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7); pdf.rect(qx,qy2,qw,qh,'S');
+  // Left: ball info
+  pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(`Jami ball: ___________ / ${totalMax.toFixed(1)}`, hx, botY+7);
+  pdf.text(`Foiz: ___________ %`, hx, botY+14);
 
-  // Finder patterns (3 corners)
-  const df=(fx,fy,s)=>{
-    pdf.setFillColor(0,0,0);pdf.rect(fx,fy,s,s,'F');
-    pdf.setFillColor(255,255,255);pdf.rect(fx+s/7,fy+s/7,s*5/7,s*5/7,'F');
-    pdf.setFillColor(0,0,0);pdf.rect(fx+s*2/7,fy+s*2/7,s*3/7,s*3/7,'F');
-  };
-  const fs=6;
-  df(qx+1,qy2+1,fs); df(qx+qw-fs-1,qy2+1,fs); df(qx+1,qy2+qh-fs-1,fs);
+  // Right: Student ID box — big, scannable
+  const idBoxW = 42;
+  const idBoxH = bottomBarH - 4;
+  const ibx = x + w - M - idBoxW - 1;
+  const iby = botY + 2;
 
-  // Data dots from ID
-  pdf.setFillColor(0,0,0);
-  const idStr=stu.id||'XXXX';
-  for(let di=0;di<idStr.length*3;di++){
-    const code=idStr.charCodeAt(di%idStr.length)*7+di*13;
-    const dx=qx+fs+3+(code%Math.floor(qw-fs-5));
-    const dy=qy2+2+((code*3)%Math.floor(qh-4));
-    if(dx>qx+fs+2&&dx<qx+qw-3&&dy>qy2+2&&dy<qy2+qh-3)
-      pdf.rect(dx,dy,1.3,1.3,'F');
-  }
-  pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(stu.id,qx+qw/2,qy2+qh+3,{align:'center'});
-  pdf.setFontSize(5.5); pdf.setTextColor(100,100,100);
-  pdf.text(`${cfg.name} | ${cfg.subject}`,qx+qw/2,qy2+qh+7,{align:'center'});
+  pdf.setFillColor(255,255,255); pdf.rect(ibx, iby, idBoxW, idBoxH, 'F');
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.8); pdf.rect(ibx, iby, idBoxW, idBoxH, 'S');
+
+  // Big ID text — sayt shu ID ni o'qiydi
+  const idStr = stu.id || 'XXXX';
+  pdf.setFontSize(16); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(idStr, ibx + idBoxW/2, iby + idBoxH*0.45, {align:'center'});
+
+  // Label
+  pdf.setFontSize(6.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,100,100);
+  pdf.text('O\'QUVCHI ID', ibx + idBoxW/2, iby + 3.5, {align:'center'});
+
+  // Student name small
+  pdf.setFontSize(6); pdf.setTextColor(60,60,60);
+  const nameShort = stu.name.length>18 ? stu.name.substring(0,16)+'...' : stu.name;
+  pdf.text(nameShort, ibx + idBoxW/2, iby + idBoxH - 2, {align:'center'});
 }
 
 // ════════════════════════════════════════════════
 // SCANNER
 // ════════════════════════════════════════════════
-function fillScSelects() {
+function fillScSelects(preselectCls, preselectTest) {
   const el=document.getElementById('scCls');
   el.innerHTML='<option value="">Sinf</option>';
   Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
-  if(S.curCls){el.value=S.curCls;scLoadTest();}
+  const useCls = preselectCls || S.curCls;
+  if(useCls){el.value=useCls;scLoadTest(preselectTest);}
 }
 
-function scLoadTest() {
+function scLoadTest(preselectTest) {
   const cid=document.getElementById('scCls').value;
   const el=document.getElementById('scTest');
   el.innerHTML='<option value="">Test</option>';
   Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>
     el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
-  if(S.curTest){el.value=S.curTest;}
-  scLoadStudents();
+  const useTest = preselectTest || S.curTest;
+  if(useTest){ el.value=useTest; }
+  scLoadAnswers();
 }
 
-function scLoadStudents() {
+function scLoadAnswers() {
   const cid=document.getElementById('scCls').value;
+  const tid=document.getElementById('scTest').value;
+  const t=S.classes[cid]?.tests?.[tid];
+
+  // Load student list
   const el=document.getElementById('scStu');
   el.innerHTML='<option value="">— Avtomatik aniqlanadi —</option>';
   Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>
-    el.innerHTML+=`<option value="${sid}">${s.name}</option>`);
+    el.innerHTML+=`<option value="${sid}">${s.name} (${s.id})</option>`);
+
+  // Show test info
+  const info=document.getElementById('scTestInfo');
+  if(t) info.textContent=`${t.count} ta savol · maks ${getTotalMax(t.count,t.blocks).toFixed(1)} ball`;
+  else info.textContent='';
+
   renderManGrid();
 }
 
@@ -741,7 +923,7 @@ function uploadImg(input) {
       const d=c.getContext('2d').getImageData(0,0,img.width,img.height);
       const qr=jsQR(d.data,d.width,d.height);
       if(qr){parseQR(qr.data);toast('✓ QR aniqlandi');}
-      else toast('QR topilmadi. Qo\'lda kiriting.');
+      else toast('QR topilmadi. ID yoki qo\'lda kiriting.');
     }; img.src=e.target.result;
   }; r.readAsDataURL(f);
 }
@@ -749,14 +931,32 @@ function uploadImg(input) {
 function parseQR(data) {
   try {
     const p=JSON.parse(data);
+    const cid=document.getElementById('scCls').value;
     if(p.sid){
       document.getElementById('scStu').value=p.sid;
-      if(p.answers){ Object.entries(p.answers).forEach(([q,a])=>{ const el=document.getElementById('m_'+q); if(el)el.value=a; }); checkNow(); }
-    } else if(p.id) { // ID only
-      const cid=document.getElementById('scCls').value;
-      Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{ if(s.id===p.id) document.getElementById('scStu').value=sid; });
+      if(p.answers){Object.entries(p.answers).forEach(([q,a])=>{const el=document.getElementById('m_'+q);if(el)el.value=a;});checkNow();}
+    } else if(p.id){
+      Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{if(s.id===p.id)document.getElementById('scStu').value=sid;});
     }
-  } catch(e){ toast('QR: '+data.substring(0,20)); }
+  } catch(e){
+    // Try plain ID text
+    tryMatchID(data.trim());
+  }
+}
+
+// Match plain text ID from titul varoq
+function tryMatchID(idText) {
+  const cid=document.getElementById('scCls').value;
+  if(!cid) return;
+  let found=false;
+  Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{
+    if(s.id && s.id.toUpperCase()===idText.toUpperCase()){
+      document.getElementById('scStu').value=sid;
+      toast(`✓ Aniqlandi: ${s.name}`);
+      found=true;
+    }
+  });
+  if(!found) toast(`ID: ${idText} — topilmadi`);
 }
 
 function checkNow() {
@@ -769,20 +969,21 @@ function checkNow() {
   let corr=0,earned=0,total=0;
   for(let i=1;i<=t.count;i++){
     const s=getScore(i,t.blocks); total+=s;
-    if(given[i]&&given[i]===(t.correctAnswers[i]||'')){corr++;earned+=s;}
+    if(given[i]&&given[i]===(t.correctAnswers?.[i]||'')){corr++;earned+=s;}
   }
   const pct=total>0?Math.round(earned/total*100):0;
-  const stuName=sid?S.classes[cid]?.students?.[sid]?.name:'—';
+  const stuSel=document.getElementById('scStu');
+  const stuName=sid?(S.classes[cid]?.students?.[sid]?.name||'Noma\'lum'):'Noma\'lum';
   const col=pct>=85?'var(--g)':pct>=50?'var(--y)':'var(--r)';
   let bubbles='';
   for(let i=1;i<=t.count;i++){
-    const a=given[i]||'',ri=t.correctAnswers[i]||'';
+    const a=given[i]||'',ri=t.correctAnswers?.[i]||'';
     const cls2=!ri?'rn':a===ri?'rg':'rr';
     bubbles+=`<span class="rb ${cls2}" title="${i}: ${a||'—'} / ${ri||'?'}">${i}</span>`;
   }
   document.getElementById('resCard').style.display='block';
   document.getElementById('resBody').innerHTML=`
-    <p style="font-size:14px;font-weight:700;margin-bottom:10px">${stuName}</p>
+    <p style="font-size:15px;font-weight:700;margin-bottom:10px">${stuName}</p>
     <div class="g3" style="margin-bottom:10px">
       <div class="stat"><div class="sn" style="color:${col}">${pct}%</div><div class="sl">Foiz</div></div>
       <div class="stat"><div class="sn">${earned.toFixed(1)}</div><div class="sl">Ball / ${total.toFixed(1)}</div></div>
@@ -793,6 +994,7 @@ function checkNow() {
     <p style="font-size:11px;color:var(--m)">🟢 To'g'ri &nbsp;🔴 Noto'g'ri &nbsp;⚪ Javob yo'q</p>`;
   S.pendRes={sid,stuName,cid,tid,earned,total,pct,corr,given};
   toast(`${stuName}: ${pct}%`);
+  document.getElementById('resCard').scrollIntoView({behavior:'smooth'});
 }
 
 async function saveRes() {
@@ -804,6 +1006,7 @@ async function saveRes() {
   S.pendRes=null; syncAnim(); toast('✓ Saqlandi');
   document.querySelectorAll('#manGrid input').forEach(i=>i.value='');
   document.getElementById('resCard').style.display='none';
+  document.getElementById('scStu').value='';
 }
 
 // ════════════════════════════════════════════════
@@ -828,7 +1031,14 @@ function rLoadTest() {
 
 function renderRes() {
   const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
-  if(!cid||!tid){ document.getElementById('rHead').innerHTML=''; document.getElementById('rBody').innerHTML='<tr><td style="color:var(--m);padding:16px">Sinf va testni tanlang</td></tr>'; return; }
+  if(!cid||!tid){
+    document.getElementById('rHead').innerHTML='';
+    document.getElementById('rBody').innerHTML='<tr><td style="color:var(--m);padding:16px">Sinf va testni tanlang</td></tr>';
+    document.getElementById('stT').textContent='0';
+    document.getElementById('stC').textContent='0';
+    document.getElementById('stA').textContent='—';
+    return;
+  }
   const cls=S.classes[cid], t=cls?.tests?.[tid]; if(!t) return;
   const stus=Object.values(cls.students||{}), res=t.results||{};
   const checked=Object.keys(res).length;
@@ -878,9 +1088,8 @@ function exportExcel() {
   const maxB=getTotalMax(t.count,t.blocks);
 
   const wb=XLSX.utils.book_new();
-  // ── Sheet 1: Natijalar ──
   const rows=[];
-  rows.push([`${t.name||t.subject} | ${cls.name} | ${t.year}`]);
+  rows.push([`${t.name||t.subject} | ${cls.name} | ${t.year||''}`]);
   rows.push([]);
   const hdr=['#','F.I.Sh',...Array.from({length:t.count},(_,i)=>`S${i+1}(${getScore(i+1,t.blocks)}b)`),'Ball','Maks','Foiz %','Baho'];
   rows.push(hdr);
@@ -888,12 +1097,11 @@ function exportExcel() {
   stus.forEach((s,i)=>{
     const r=rById[s.id], row=[i+1,s.name];
     for(let q=1;q<=t.count;q++) row.push(r?.given?.[q]||'');
-    const ballCol=XLSX.utils.encode_col(t.count+2); // Ball column letter
+    const ballCol=XLSX.utils.encode_col(t.count+2);
     const maxCol=XLSX.utils.encode_col(t.count+3);
-    const rowNum=i+4; // data starts row 4
+    const rowNum=i+4;
     if(r){
       row.push(r.earned, maxB);
-      // FORMULA: =C4/D4*100 style
       row.push({f:`ROUND(${ballCol}${rowNum}/${maxCol}${rowNum}*100,1)`});
       row.push({f:`IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.85,5,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.7,4,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.5,3,2)))`});
     } else {
@@ -903,21 +1111,19 @@ function exportExcel() {
   });
 
   rows.push([]);
+  const pctCol=XLSX.utils.encode_col(t.count+4);
   rows.push(['','O\'RTACHA:','','','','','',
-    {f:`ROUND(AVERAGEIF(${XLSX.utils.encode_col(t.count+4)}4:${XLSX.utils.encode_col(t.count+4)}${stus.length+3},"<>",${XLSX.utils.encode_col(t.count+4)}4:${XLSX.utils.encode_col(t.count+4)}${stus.length+3}),1)`}
+    {f:`ROUND(AVERAGEIF(${pctCol}4:${pctCol}${stus.length+3},"<>",${pctCol}4:${pctCol}${stus.length+3}),1)`}
   ]);
   rows.push([`O'qituvchi: ${cls.teacher||'—'}`, `Sana: ${fmtD(t.date)}`]);
 
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  // Column widths
   ws['!cols']=[{wch:4},{wch:26},...Array(t.count).fill({wch:7}),{wch:8},{wch:7},{wch:8},{wch:7}];
-  // Freeze header row
   ws['!freeze']={xSplit:2,ySplit:3};
   XLSX.utils.book_append_sheet(wb,ws,'Natijalar');
 
-  // ── Sheet 2: To'g'ri javoblar ──
   const ca=[['Savol','To\'g\'ri','Ball']];
-  for(let i=1;i<=t.count;i++) ca.push([i,t.correctAnswers[i]||'',getScore(i,t.blocks)]);
+  for(let i=1;i<=t.count;i++) ca.push([i,t.correctAnswers?.[i]||'',getScore(i,t.blocks)]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ca),'Javoblar');
 
   XLSX.writeFile(wb,`${cls.name}-${t.name||t.subject}-${t.date}.xlsx`);
@@ -938,18 +1144,16 @@ function exportPDF() {
   const pdf=new jsPDF({format:'a4',orientation:'landscape',unit:'mm'});
   const W=297,H=210;
 
-  // Header
   pdf.setFillColor(26,115,232); pdf.rect(0,0,W,18,'F');
   pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
-  pdf.text(`${t.name||t.subject} | ${cls.name} | ${t.year}`,W/2,11,{align:'center'});
+  pdf.text(`${t.name||t.subject} | ${cls.name} | ${t.year||''}`,W/2,11,{align:'center'});
   pdf.setFontSize(7); pdf.setFont('helvetica','normal');
-  pdf.text(`O'qituvchi: ${cls.teacher||'—'}  |  Sana: ${fmtD(t.date)}  |  Maksimal ball: ${getTotalMax(t.count,t.blocks).toFixed(1)}`,W/2,16,{align:'center'});
+  pdf.text(`O'qituvchi: ${cls.teacher||'—'}  |  Sana: ${fmtD(t.date)}  |  Maks ball: ${getTotalMax(t.count,t.blocks).toFixed(1)}`,W/2,16,{align:'center'});
 
   let y=26, rH=7;
   const maxShow=Math.min(t.count,18);
   const offA=46+maxShow*11;
 
-  // Table header
   pdf.setFillColor(240,246,255); pdf.rect(4,y-5,W-8,rH,'F');
   pdf.setTextColor(26,115,232); pdf.setFontSize(7); pdf.setFont('helvetica','bold');
   pdf.text('#',6,y); pdf.text('F.I.Sh',12,y);
@@ -982,7 +1186,6 @@ function exportPDF() {
     pdf.setDrawColor(220,220,220); pdf.line(4,y+2,W-4,y+2); y+=rH;
   });
 
-  // Footer
   const vals=Object.values(res);
   const avg=vals.length?Math.round(vals.reduce((a,r)=>a+r.pct,0)/vals.length):0;
   pdf.setFillColor(26,115,232); pdf.rect(0,H-9,W,9,'F');
