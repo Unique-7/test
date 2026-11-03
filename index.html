@@ -124,14 +124,12 @@ tr:hover td{background:#fafbff}
 .note{background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:12px;font-size:12px;margin-bottom:12px}
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
 .bgs{background:#e6f4ea;color:#137333}.bgy{background:#fef7e0;color:#b06000}.bgr{background:#fce8e6;color:#a50e0e}
-/* Test list cards */
 .tcard{background:var(--ps);border-radius:10px;padding:11px 14px;margin-bottom:7px;cursor:pointer;
   border:2px solid transparent;transition:.2s;display:flex;align-items:center;gap:10px}
 .tcard:hover,.tcard.sel{border-color:var(--p)}
 .tcard-name{font-size:13px;font-weight:700;color:var(--p)}
 .tcard-info{font-size:11px;color:var(--m);margin-top:2px}
 .tcard-btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
-/* Block rows */
 .block-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:end;margin-bottom:7px}
 </style>
 </head>
@@ -149,10 +147,10 @@ tr:hover td{background:#fafbff}
   </div>
 </nav>
 
-<!-- ═══ CLASSES ═══ -->
+<!-- CLASSES -->
 <div class="page on" id="page-classes">
   <div id="demoNote" class="note" style="display:none">
-    ⚠️ <strong>Demo rejim</strong> — ma'lumotlar faqat bu qurilmada. Real-vaqt sync uchun Firebase ulang.
+    ⚠️ <strong>Demo rejim</strong> — ma'lumotlar faqat bu qurilmada.
   </div>
   <div class="card">
     <div class="ct">🏫 Sinflar
@@ -170,19 +168,17 @@ tr:hover td{background:#fafbff}
         <button class="btn bp bs" onclick="startNewTest()">▶ Yangi test</button>
       </div>
     </div>
-    <!-- Students -->
     <div style="margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:5px">O'QUVCHILAR:</div>
       <div id="stuChips"></div>
     </div>
     <div class="sep"></div>
-    <!-- Tests list -->
     <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:7px">TESTLAR:</div>
     <div id="testList"></div>
   </div>
 </div>
 
-<!-- ═══ TESTS LIST ═══ -->
+<!-- TESTS LIST -->
 <div class="page" id="page-tests">
   <div class="card">
     <div class="ct">📋 Testlar
@@ -197,35 +193,21 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
-<!-- ═══ TEST SETUP ═══ -->
+<!-- TEST SETUP -->
 <div class="page" id="page-test">
   <div class="card">
     <div class="ct">⚙️ Test yaratish / tahrirlash</div>
     <label>Test nomi (masalan: 1-CHSB, 2-BSB, Nazorat-1)</label>
     <input id="tName" placeholder="1-CHSB" value="1-CHSB">
     <div class="g2">
-      <div>
-        <label>Fan</label>
-        <input id="tSubj" value="Kimyo">
-      </div>
-      <div>
-        <label>Sinf</label>
-        <select id="tCls"></select>
-      </div>
+      <div><label>Fan</label><input id="tSubj" value="Kimyo"></div>
+      <div><label>Sinf</label><select id="tCls"></select></div>
     </div>
     <div class="g2">
-      <div>
-        <label>Sana</label>
-        <input id="tDate" type="date">
-      </div>
-      <div>
-        <label>O'quv yili</label>
-        <input id="tYear" value="2025-2026">
-      </div>
+      <div><label>Sana</label><input id="tDate" type="date"></div>
+      <div><label>O'quv yili</label><input id="tYear" value="2025-2026"></div>
     </div>
   </div>
-
-  <!-- Ball bloklari -->
   <div class="card">
     <div class="ct">🎯 Ball bloklari</div>
     <p style="font-size:12px;color:var(--m);margin-bottom:9px">
@@ -237,42 +219,30 @@ tr:hover td{background:#fafbff}
       Jami savollar: <strong id="totalQCount">0</strong> ta &nbsp;|&nbsp; Maksimal ball: <strong id="totalMaxBall">0</strong>
     </p>
   </div>
-
-  <!-- Javoblar "Testlar" bo'limidan kiritiladi -->
   <div class="note" style="font-size:12px">
     💡 To'g'ri javoblarni kiritish uchun <strong>📋 Testlar</strong> bo'limiga o'ting → test kartasini bosing → <strong>✏️ Javob+Skaner</strong>
   </div>
-
   <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px">
     <button class="btn bg" onclick="saveTest()">✓ Testni saqlash</button>
     <button class="btn bo" onclick="printOMR()">📄 Titul varoq (PDF)</button>
   </div>
 </div>
 
-<!-- ═══ SCANNER ═══ -->
+<!-- SCANNER -->
 <div class="page" id="page-scanner">
   <div class="card">
     <div class="ct">📷 Test Tekshirish</div>
     <div class="mb">
-      📌 Titul varoqni kameraga tuting. Tizim <strong>ID orqali o'quvchini avtomatik aniqlaydi</strong> va natijani ko'rsatadi.
+      📌 Titul varoqdagi <strong>QR kodni</strong> kameraga tuting — tizim o'quvchini avtomatik aniqlaydi.
     </div>
-
     <div class="g2" style="margin-bottom:10px">
-      <div>
-        <label>Sinf</label>
-        <select id="scCls" onchange="scLoadTest()"></select>
-      </div>
-      <div>
-        <label>Test</label>
-        <select id="scTest" onchange="scLoadAnswers()"></select>
-      </div>
+      <div><label>Sinf</label><select id="scCls" onchange="scLoadTest()"></select></div>
+      <div><label>Test</label><select id="scTest" onchange="scLoadAnswers()"></select></div>
     </div>
-
     <label>O'quvchi (avtomatik yoki qo'lda)</label>
     <select id="scStu">
       <option value="">— Avtomatik aniqlanadi —</option>
     </select>
-
     <div class="sep"></div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn bp" onclick="startCam()">📷 Kamerani yoqish</button>
@@ -281,10 +251,9 @@ tr:hover td{background:#fafbff}
         🖼 Rasm yuklash<input type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
       </label>
     </div>
-
     <div id="scanBox" style="display:none;margin-bottom:10px">
       <div style="background:#fff8e1;border-radius:7px;padding:6px 10px;font-size:12px;margin-bottom:6px;color:#7a5500">
-        📐 Varoqni <strong>YOTIQ</strong> (landscape) tuting — ikki titul yonma-yon ko'rinsin
+        📐 Varoqni <strong>YOTIQ</strong> tuting — QR kod yuqori o'ng burchakda
       </div>
       <div class="scan-wrap">
         <video id="camVid" playsinline autoplay muted></video>
@@ -293,7 +262,6 @@ tr:hover td{background:#fafbff}
       <canvas id="camCvs" style="display:none"></canvas>
     </div>
   </div>
-
   <div class="card">
     <div class="ct">✏️ Javoblar
       <span id="scTestInfo" style="font-size:11px;font-weight:400;color:var(--m);margin-left:6px"></span>
@@ -303,7 +271,6 @@ tr:hover td{background:#fafbff}
     <div class="sep"></div>
     <button class="btn bg" onclick="checkNow()">✓ Tekshirish</button>
   </div>
-
   <div class="card" id="resCard" style="display:none">
     <div class="ct">📊 Natija</div>
     <div id="resBody"></div>
@@ -312,7 +279,7 @@ tr:hover td{background:#fafbff}
   </div>
 </div>
 
-<!-- ═══ RESULTS ═══ -->
+<!-- RESULTS -->
 <div class="page" id="page-results">
   <div class="g3" style="margin-bottom:12px">
     <div class="stat"><div class="sn" id="stT">0</div><div class="sl">O'quvchi</div></div>
@@ -322,19 +289,13 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="ct">📊 Natijalar
       <div style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap;align-items:center">
-        <select id="rCls" onchange="rLoadTest()" style="width:auto;font-size:12px;padding:5px 9px">
-          <option value="">Sinf</option>
-        </select>
-        <select id="rTest" onchange="renderRes()" style="width:auto;font-size:12px;padding:5px 9px">
-          <option value="">Test</option>
-        </select>
+        <select id="rCls" onchange="rLoadTest()" style="width:auto;font-size:12px;padding:5px 9px"><option value="">Sinf</option></select>
+        <select id="rTest" onchange="renderRes()" style="width:auto;font-size:12px;padding:5px 9px"><option value="">Test</option></select>
         <button class="btn bg bs" onclick="exportExcel()">📥 Excel</button>
         <button class="btn bp bs" onclick="exportPDF()">📄 PDF</button>
       </div>
     </div>
-    <div class="tw">
-      <table><thead id="rHead"></thead><tbody id="rBody"></tbody></table>
-    </div>
+    <div class="tw"><table><thead id="rHead"></thead><tbody id="rBody"></tbody></table></div>
   </div>
 </div>
 
@@ -363,7 +324,6 @@ tr:hover td{background:#fafbff}
     </div>
   </div>
 </div>
-<!-- Test answers modal (from test list) -->
 <div class="mbg" id="mdAns">
   <div class="md">
     <h3 id="mdAnsTitle">✅ To'g'ri javoblar</h3>
@@ -378,112 +338,62 @@ tr:hover td{background:#fafbff}
 <div id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
-const S = {
-  classes:{}, curCls:null, curTest:null,
-  cam:null, scanTick:null, pendRes:null,
-  mdAnsClsId:null, mdAnsTestId:null
-};
+const S = { classes:{}, curCls:null, curTest:null, cam:null, scanTick:null, pendRes:null, mdAnsClsId:null, mdAnsTestId:null };
 
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
 window.addEventListener('db-ready', async () => {
   if (window.DEMO) document.getElementById('demoNote').style.display='block';
   document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
   window.DB.listen('classes', d => {
     S.classes = d || {};
-    renderClsGrid();
-    fillClsSelects();
+    renderClsGrid(); fillClsSelects();
     if (S.curCls && S.classes[S.curCls]) renderClsDetail(S.curCls);
-    // refresh tests page if open
-    if (document.getElementById('page-tests')?.classList.contains('on')) {
-      fillTestsPageFilter(); renderTestsPage();
-    }
+    if (document.getElementById('page-tests')?.classList.contains('on')) { fillTestsPageFilter(); renderTestsPage(); }
   });
-  initBlocks();
-  updateBlockSummary();
+  initBlocks(); updateBlockSummary();
 });
 
-// ════════════════════════════════════════════════
-// NAVIGATION
-// ════════════════════════════════════════════════
 function goTo(id, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nt').forEach(t=>t.classList.remove('on'));
   document.getElementById('page-'+id).classList.add('on');
   if (btn) btn.classList.add('on');
-  else document.querySelectorAll('.nt').forEach(t=>{
-    if(t.getAttribute('onclick')?.includes("'"+id+"'")) t.classList.add('on');
-  });
-  if (id==='scanner') { fillScSelects(); }
+  else document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'"+id+"'")) t.classList.add('on'); });
+  if (id==='scanner') fillScSelects();
   if (id==='results') { fillResSelects(); renderRes(); }
   if (id==='tests') { fillTestsPageFilter(); renderTestsPage(); }
 }
 
-// ════════════════════════════════════════════════
-// CLASSES
-// ════════════════════════════════════════════════
+// ── CLASSES ──
 function renderClsGrid() {
-  const el = document.getElementById('clsGrid');
-  const keys = Object.keys(S.classes||{});
-  if (!keys.length) {
-    el.innerHTML='<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q — "+ Yangi sinf" tugmasini bosing</p>';
-    return;
-  }
-  el.innerHTML = keys.map(k => {
-    const c = S.classes[k];
-    const sc = Object.keys(c.students||{}).length;
-    const tc = Object.keys(c.tests||{}).length;
-    return `<div class="cc ${S.curCls===k?'sel':''}" onclick="selectCls('${k}')">
-      <h3>${c.name}</h3><p>👥 ${sc} · 📋 ${tc} test</p>
-      <p style="font-size:10px;margin-top:2px;color:var(--m)">${c.teacher||''}</p>
-    </div>`;
-  }).join('');
+  const el=document.getElementById('clsGrid'), keys=Object.keys(S.classes||{});
+  if (!keys.length) { el.innerHTML='<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q</p>'; return; }
+  el.innerHTML=keys.map(k=>{ const c=S.classes[k], sc=Object.keys(c.students||{}).length, tc=Object.keys(c.tests||{}).length;
+    return `<div class="cc ${S.curCls===k?'sel':''}" onclick="selectCls('${k}')"><h3>${c.name}</h3><p>👥 ${sc} · 📋 ${tc} test</p><p style="font-size:10px;margin-top:2px;color:var(--m)">${c.teacher||''}</p></div>`; }).join('');
 }
 
-function selectCls(id) {
-  S.curCls = id;
-  renderClsGrid();
-  renderClsDetail(id);
-  document.getElementById('clsDetail').style.display='block';
-  fillClsSelects();
-}
+function selectCls(id) { S.curCls=id; renderClsGrid(); renderClsDetail(id); document.getElementById('clsDetail').style.display='block'; fillClsSelects(); }
 
 function renderClsDetail(id) {
-  const c = S.classes[id]; if(!c) return;
-  document.getElementById('clsName').textContent = c.name;
-  const stus = Object.entries(c.students||{});
-  const chips = document.getElementById('stuChips');
-  chips.innerHTML = stus.length
+  const c=S.classes[id]; if(!c) return;
+  document.getElementById('clsName').textContent=c.name;
+  const stus=Object.entries(c.students||{});
+  document.getElementById('stuChips').innerHTML=stus.length
     ? stus.map(([sid,s])=>`<span class="chip">${s.name}<button onclick="delStu('${id}','${sid}')">×</button></span>`).join('')
     : '<span style="font-size:12px;color:var(--m)">Hali o\'quvchi yo\'q</span>';
-
-  const tests = Object.entries(c.tests||{});
-  const tl = document.getElementById('testList');
-  if (!tests.length) {
-    tl.innerHTML='<p style="font-size:12px;color:var(--m)">Hali test yo\'q — "▶ Yangi test" tugmasini bosing</p>';
-    return;
-  }
-  tl.innerHTML = tests.map(([tid,t])=>{
-    const resCount = Object.keys(t.results||{}).length;
-    const stuCount = Object.keys(c.students||{}).length;
+  const tests=Object.entries(c.tests||{});
+  const tl=document.getElementById('testList');
+  if (!tests.length) { tl.innerHTML='<p style="font-size:12px;color:var(--m)">Hali test yo\'q</p>'; return; }
+  tl.innerHTML=tests.map(([tid,t])=>{ const rc=Object.keys(t.results||{}).length, sc2=Object.keys(c.students||{}).length;
     return `<div class="tcard" onclick="loadTest('${id}','${tid}')">
-      <div>
-        <div class="tcard-name">${t.name||t.subject}</div>
-        <div class="tcard-info">📚 ${t.subject} &nbsp;·&nbsp; 📅 ${fmtD(t.date)} &nbsp;·&nbsp; ${t.count} ta savol</div>
-        <div class="tcard-info">✅ ${resCount}/${stuCount} tekshirilgan</div>
-      </div>
+      <div><div class="tcard-name">${t.name||t.subject}</div>
+      <div class="tcard-info">📚 ${t.subject} · 📅 ${fmtD(t.date)} · ${t.count} savol</div>
+      <div class="tcard-info">✅ ${rc}/${sc2} tekshirilgan</div></div>
       <div class="tcard-btns" onclick="event.stopPropagation()">
         <button class="btn bp bx" onclick="quickScan('${id}','${tid}')">📷 Tekshir</button>
         <button class="btn bo bx" onclick="openAnsModal('${id}','${tid}')">✏️ Javoblar</button>
         <button class="btn bo bx" onclick="printOMRTest('${id}','${tid}')">📄 PDF</button>
         <button class="btn br bx" onclick="deleteTest('${id}','${tid}')">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
+      </div></div>`; }).join('');
 }
 
 function openMd(id) { document.getElementById(id).classList.add('open'); }
@@ -491,76 +401,54 @@ function closeMd(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.mbg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
 async function createCls() {
-  const name = document.getElementById('mClsN').value.trim();
-  const teacher = document.getElementById('mClsT').value.trim();
+  const name=document.getElementById('mClsN').value.trim(), teacher=document.getElementById('mClsT').value.trim();
   if (!name) { toast('Sinf nomini kiriting'); return; }
-  await window.DB.push('classes', {name, teacher, students:{}, tests:{}});
-  document.getElementById('mClsN').value='';
-  document.getElementById('mClsT').value='';
-  closeMd('mdCls');
-  syncAnim(); toast(`✓ ${name} yaratildi`);
+  await window.DB.push('classes',{name,teacher,students:{},tests:{}});
+  document.getElementById('mClsN').value=''; document.getElementById('mClsT').value='';
+  closeMd('mdCls'); syncAnim(); toast(`✓ ${name} yaratildi`);
 }
 
 async function addStudents() {
   if (!S.curCls) { toast('Sinf tanlang'); return; }
-  const raw = document.getElementById('mStuIn').value;
-  const names = raw.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s.length>1);
-  const exist = Object.values(S.classes[S.curCls]?.students||{}).map(s=>s.name.toLowerCase());
+  const raw=document.getElementById('mStuIn').value;
+  const names=raw.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s.length>1);
+  const exist=Object.values(S.classes[S.curCls]?.students||{}).map(s=>s.name.toLowerCase());
   let n=0;
   for (const name of names) {
     if (exist.includes(name.toLowerCase())) continue;
-    const id = 'S'+Date.now().toString(36).toUpperCase().slice(-3)+Math.random().toString(36)[2].toUpperCase();
-    await window.DB.write(`classes/${S.curCls}/students/${id}`,{name,id});
-    n++;
+    const id='S'+Date.now().toString(36).toUpperCase().slice(-3)+Math.random().toString(36)[2].toUpperCase();
+    await window.DB.write(`classes/${S.curCls}/students/${id}`,{name,id}); n++;
   }
   document.getElementById('mStuIn').value='';
   closeMd('mdStu'); syncAnim(); toast(`✓ ${n} nafar qo'shildi`);
 }
 
-async function delStu(cid, sid) {
-  if (!confirm('O\'chirish?')) return;
-  await window.DB.write(`classes/${cid}/students/${sid}`, null); syncAnim();
-}
+async function delStu(cid,sid) { if(!confirm('O\'chirish?')) return; await window.DB.write(`classes/${cid}/students/${sid}`,null); syncAnim(); }
 
-// ════════════════════════════════════════════════
-// TESTS PAGE — all tests across classes, with inline answers + scan
-// ════════════════════════════════════════════════
+// ── TESTS PAGE ──
 function fillTestsPageFilter() {
-  const el=document.getElementById('flCls');
-  const cur=el.value;
+  const el=document.getElementById('flCls'), cur=el.value;
   el.innerHTML='<option value="">Barcha sinflar</option>';
   Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
   if(cur) el.value=cur;
 }
 
 function renderTestsPage() {
-  const filterCls=document.getElementById('flCls').value;
-  const container=document.getElementById('testsPageList');
-  let html='';
-  const clsEntries = filterCls
-    ? [[filterCls, S.classes[filterCls]]]
-    : Object.entries(S.classes||{});
-
-  let total=0;
+  const filterCls=document.getElementById('flCls').value, container=document.getElementById('testsPageList');
+  let html='', total=0;
+  const clsEntries=filterCls?[[filterCls,S.classes[filterCls]]]:Object.entries(S.classes||{});
   clsEntries.forEach(([cid,cls])=>{
     if(!cls) return;
     const tests=Object.entries(cls.tests||{});
     if(!tests.length) return;
-    html+=`<div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:6px;padding:4px 0;border-bottom:1px solid var(--bd)">
-        🏫 ${cls.name} &nbsp;·&nbsp; 👥 ${Object.keys(cls.students||{}).length} o'quvchi
-      </div>`;
+    html+=`<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:6px;padding:4px 0;border-bottom:1px solid var(--bd)">🏫 ${cls.name} · 👥 ${Object.keys(cls.students||{}).length} o'quvchi</div>`;
     tests.forEach(([tid,t])=>{
-      const resCount=Object.keys(t.results||{}).length;
-      const stuCount=Object.keys(cls.students||{}).length;
-      const pct=stuCount?Math.round(resCount/stuCount*100):0;
+      const rc=Object.keys(t.results||{}).length, sc=Object.keys(cls.students||{}).length, pct=sc?Math.round(rc/sc*100):0;
       html+=`<div class="tcard" id="tc_${tid}">
         <div style="flex:1;min-width:0">
           <div class="tcard-name">${t.name||t.subject}</div>
-          <div class="tcard-info">📚 ${t.subject} &nbsp;·&nbsp; ${cls.name} &nbsp;·&nbsp; 📅 ${fmtD(t.date)} &nbsp;·&nbsp; ${t.count} savol</div>
-          <div class="tcard-info">
-            <span class="badge ${pct===100?'bgs':pct>50?'bgy':'bgr'}">${resCount}/${stuCount} tekshirildi</span>
-          </div>
+          <div class="tcard-info">📚 ${t.subject} · ${cls.name} · 📅 ${fmtD(t.date)} · ${t.count} savol</div>
+          <div class="tcard-info"><span class="badge ${pct===100?'bgs':pct>50?'bgy':'bgr'}">${rc}/${sc} tekshirildi</span></div>
         </div>
         <div class="tcard-btns">
           <button class="btn bp bx" onclick="openTestDetail('${cid}','${tid}')">✏️ Javob+Skaner</button>
@@ -568,7 +456,6 @@ function renderTestsPage() {
           <button class="btn br bx" onclick="deleteTest('${cid}','${tid}')">🗑</button>
         </div>
       </div>
-      <!-- Inline expand panel -->
       <div id="td_${tid}" style="display:none;margin-bottom:8px;background:#f8faff;border-radius:10px;border:1.5px solid var(--p);padding:14px">
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <strong style="font-size:13px">${t.name} — To'g'ri javoblar</strong>
@@ -578,119 +465,74 @@ function renderTestsPage() {
         </div>
         <p style="font-size:11px;color:var(--m);margin-bottom:8px">Har savol uchun to'g'ri javobni kiriting (A/B/C/D):</p>
         <div class="ag" id="ia_${tid}"></div>
-      </div>`;
-      total++;
+      </div>`; total++;
     });
     html+='</div>';
   });
-
-  if(!total) html='<p style="color:var(--m);font-size:13px">Hali test yo\'q — "Yangi test" tugmasini bosing</p>';
+  if(!total) html='<p style="color:var(--m);font-size:13px">Hali test yo\'q</p>';
   container.innerHTML=html;
 }
 
-function openTestDetail(cid, tid) {
-  // close any open
+function openTestDetail(cid,tid) {
   document.querySelectorAll('[id^="td_"]').forEach(el=>el.style.display='none');
-  const panel=document.getElementById('td_'+tid);
-  if(!panel) return;
+  const panel=document.getElementById('td_'+tid); if(!panel) return;
   panel.style.display='block';
-  // fill answers grid
   const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
-  const n=t.count||15;
-  const g=document.getElementById('ia_'+tid); g.innerHTML='';
+  const n=t.count||15, g=document.getElementById('ia_'+tid); g.innerHTML='';
   for(let i=1;i<=n;i++){
     const d=document.createElement('div'); d.className='ac';
     d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ia${tid}_${i}" value="${t.correctAnswers?.[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
     g.appendChild(d);
   }
-  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-  // store context
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   S.mdAnsClsId=cid; S.mdAnsTestId=tid;
 }
 
-function closeTestDetail(tid) {
-  const panel=document.getElementById('td_'+tid);
-  if(panel) panel.style.display='none';
-}
+function closeTestDetail(tid) { const p=document.getElementById('td_'+tid); if(p) p.style.display='none'; }
 
-async function saveInlineAns(cid, tid) {
+async function saveInlineAns(cid,tid) {
   const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
   const n=t.count||15, ca={};
-  for(let i=1;i<=n;i++){
-    const el=document.getElementById(`ia${tid}_${i}`);
-    if(el?.value) ca[i]=el.value.trim().toUpperCase();
-  }
+  for(let i=1;i<=n;i++){const el=document.getElementById(`ia${tid}_${i}`); if(el?.value) ca[i]=el.value.trim().toUpperCase();}
   t.correctAnswers=ca;
   await window.DB.write(`classes/${cid}/tests/${tid}/correctAnswers`,ca);
   syncAnim(); toast('✓ Javoblar saqlandi');
 }
 
-function goToScanWithTest(cid, tid) {
-  S.curCls=cid; S.curTest=tid;
-  fillScSelects(cid, tid);
-  goTo('scanner');
+function goToScanWithTest(cid,tid) {
+  S.curCls=cid; S.curTest=tid; fillScSelects(cid,tid); goTo('scanner');
   document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'scanner'")) t.classList.add('on'); });
 }
 
-// ════════════════════════════════════════════════
-// TEST SETUP — blocks auto-expand
-// ════════════════════════════════════════════════
-// ════════════════════════════════════════════════
-function initBlocks() {
-  document.getElementById('blockList').innerHTML='';
-  addBlock(1,5,2); addBlock(6,10,2.7);
-}
+// ── TEST SETUP ──
+function initBlocks() { document.getElementById('blockList').innerHTML=''; addBlock(1,5,2); addBlock(6,10,2.7); }
 
-function addBlock(f, t, s) {
-  // auto-calculate start from last block
-  if (f === undefined) {
-    const rows = document.querySelectorAll('.block-row');
-    let lastTo = 0;
-    rows.forEach(r => { const v = +r.querySelector('.bt').value; if(v>lastTo) lastTo=v; });
-    f = lastTo + 1; t = f + 4; s = 2;
+function addBlock(f,t,s) {
+  if (f===undefined) {
+    const rows=document.querySelectorAll('.block-row'); let lastTo=0;
+    rows.forEach(r=>{const v=+r.querySelector('.bt').value; if(v>lastTo) lastTo=v;});
+    f=lastTo+1; t=f+4; s=2;
   }
-  const d = document.createElement('div');
-  d.className = 'block-row';
-  d.innerHTML = `
-    <div><label style="margin-top:0">Boshlanish</label><input type="number" class="bf" value="${f}" min="1" oninput="updateBlockSummary()"></div>
+  const d=document.createElement('div'); d.className='block-row';
+  d.innerHTML=`<div><label style="margin-top:0">Boshlanish</label><input type="number" class="bf" value="${f}" min="1" oninput="updateBlockSummary()"></div>
     <div><label style="margin-top:0">Tugash</label><input type="number" class="bt" value="${t}" min="1" oninput="onBlockChange(this)"></div>
     <div><label style="margin-top:0">Ball</label><input type="number" class="bs2" value="${s||2}" step="0.1" min="0" oninput="updateBlockSummary()"></div>
     <div style="padding-bottom:0"><button class="btn br bx" onclick="this.closest('.block-row').remove();updateBlockSummary()">✕</button></div>`;
-  document.getElementById('blockList').appendChild(d);
-  updateBlockSummary();
+  document.getElementById('blockList').appendChild(d); updateBlockSummary();
 }
 
 function onBlockChange(input) {
-  // when user finishes filling a block, auto-add next if it's the last block
-  const rows = Array.from(document.querySelectorAll('.block-row'));
-  const lastRow = rows[rows.length - 1];
-  if (input.closest('.block-row') === lastRow) {
-    const val = +input.value;
-    if (val > 0) addBlock(val+1, val+5, 2);
-  }
+  const rows=Array.from(document.querySelectorAll('.block-row'));
+  if (input.closest('.block-row')===rows[rows.length-1]) { const v=+input.value; if(v>0) addBlock(v+1,v+5,2); }
   updateBlockSummary();
 }
 
 function updateBlockSummary() {
-  const blocks = getBlocks();
-  if (!blocks.length) {
-    document.getElementById('totalQCount').textContent = '0';
-    document.getElementById('totalMaxBall').textContent = '0';
-    renderCorrGridFromBlocks();
-    return;
-  }
-  const maxQ = Math.max(...blocks.map(b => b.to));
-  const maxBall = getTotalMax(maxQ, blocks);
-  document.getElementById('totalQCount').textContent = maxQ;
-  document.getElementById('totalMaxBall').textContent = maxBall.toFixed(1);
-  renderCorrGridFromBlocks();
-}
-
-function renderCorrGridFromBlocks() {
-  const blocks = getBlocks();
-  if (!blocks.length) { document.getElementById('corrGrid').innerHTML=''; return; }
-  const n = Math.max(...blocks.map(b=>b.to));
-  renderCorrGrid(n);
+  const blocks=getBlocks();
+  if (!blocks.length) { document.getElementById('totalQCount').textContent='0'; document.getElementById('totalMaxBall').textContent='0'; return; }
+  const maxQ=Math.max(...blocks.map(b=>b.to));
+  document.getElementById('totalQCount').textContent=maxQ;
+  document.getElementById('totalMaxBall').textContent=getTotalMax(maxQ,blocks).toFixed(1);
 }
 
 function getBlocks() {
@@ -699,18 +541,13 @@ function getBlocks() {
   })).filter(b=>b.from>0&&b.to>=b.from);
 }
 
-function getScore(q, blocks) {
-  for(const b of blocks) if(q>=b.from&&q<=b.to) return b.score;
-  return 1;
-}
-function getTotalMax(n, blocks) { let t=0; for(let i=1;i<=n;i++) t+=getScore(i,blocks); return t; }
+function getScore(q,blocks) { for(const b of blocks) if(q>=b.from&&q<=b.to) return b.score; return 1; }
+function getTotalMax(n,blocks) { let t=0; for(let i=1;i<=n;i++) t+=getScore(i,blocks); return t; }
 
 function renderCorrGrid(count) {
-  const n = count || (+document.getElementById('tCount')?.value || 15);
-  const g = document.getElementById('corrGrid');
-  const prev = {};
-  g.querySelectorAll('input').forEach((inp,i)=>{ if(inp.value) prev[i+1]=inp.value; });
-  g.innerHTML = '';
+  const n=count||15, g=document.getElementById('corrGrid');
+  if(!g) return;
+  const prev={}; g.querySelectorAll('input').forEach((inp,i)=>{if(inp.value) prev[i+1]=inp.value;}); g.innerHTML='';
   for(let i=1;i<=n;i++){
     const d=document.createElement('div'); d.className='ac';
     d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ca_${i}" value="${prev[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
@@ -719,82 +556,57 @@ function renderCorrGrid(count) {
 }
 
 function getCorrAnswers(count) {
-  const n = count || getBlocks().reduce((m,b)=>Math.max(m,b.to),0);
-  const ca = {};
-  for(let i=1;i<=n;i++){const el=document.getElementById('ca_'+i);if(el?.value) ca[i]=el.value.trim().toUpperCase();}
+  const n=count||getBlocks().reduce((m,b)=>Math.max(m,b.to),0), ca={};
+  for(let i=1;i<=n;i++){const el=document.getElementById('ca_'+i); if(el?.value) ca[i]=el.value.trim().toUpperCase();}
   return ca;
 }
 
 function getTestCfg() {
-  const blocks = getBlocks();
-  const maxQ = blocks.length ? Math.max(...blocks.map(b=>b.to)) : 0;
-  return {
-    name: document.getElementById('tName').value.trim()||'Test',
-    subject: document.getElementById('tSubj').value.trim()||'Fan',
-    classId: document.getElementById('tCls').value,
-    date: document.getElementById('tDate').value,
-    year: document.getElementById('tYear').value.trim(),
-    count: maxQ,
-    blocks: blocks,
-    correctAnswers: getCorrAnswers(maxQ),
-    createdAt: Date.now()
-  };
+  const blocks=getBlocks(), maxQ=blocks.length?Math.max(...blocks.map(b=>b.to)):0;
+  return { name:document.getElementById('tName').value.trim()||'Test', subject:document.getElementById('tSubj').value.trim()||'Fan',
+    classId:document.getElementById('tCls').value, date:document.getElementById('tDate').value,
+    year:document.getElementById('tYear').value.trim(), count:maxQ, blocks, correctAnswers:getCorrAnswers(maxQ), createdAt:Date.now() };
 }
 
 function startNewTest() {
-  S.curTest = null;
-  if (S.curCls) { fillClsSelects(); document.getElementById('tCls').value = S.curCls; }
-  initBlocks();
-  goTo('test');
-  document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'test'")) t.classList.add('on'); });
+  S.curTest=null; if(S.curCls){fillClsSelects(); document.getElementById('tCls').value=S.curCls;}
+  initBlocks(); goTo('test');
+  document.querySelectorAll('.nt').forEach(t=>{if(t.getAttribute('onclick')?.includes("'test'")) t.classList.add('on');});
 }
 
-function loadTest(clsId, testId) {
+function loadTest(clsId,testId) {
   S.curCls=clsId; S.curTest=testId;
   const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
   fillClsSelects();
-  document.getElementById('tName').value=t.name||t.type||'';
+  document.getElementById('tName').value=t.name||'';
   document.getElementById('tSubj').value=t.subject;
   document.getElementById('tCls').value=clsId;
   document.getElementById('tDate').value=t.date;
   document.getElementById('tYear').value=t.year||'2025-2026';
   document.getElementById('blockList').innerHTML='';
   (t.blocks||[]).forEach(b=>addBlock(b.from,b.to,b.score));
-  const n=t.count||15;
-  renderCorrGrid(n);
-  setTimeout(()=>{ Object.entries(t.correctAnswers||{}).forEach(([q,a])=>{ const el=document.getElementById('ca_'+q); if(el)el.value=a; }); updateBlockSummary(); },80);
-  goTo('test');
-  toast(`✓ "${t.name||t.subject}" yuklandi`);
+  updateBlockSummary(); goTo('test'); toast(`✓ "${t.name||t.subject}" yuklandi`);
 }
 
 async function saveTest() {
   const cfg=getTestCfg();
   if(!cfg.classId){toast('Sinf tanlang');return;}
   if(!cfg.count){toast('Blok kiriting');return;}
-  if(S.curTest) {
-    await window.DB.write(`classes/${cfg.classId}/tests/${S.curTest}`, cfg);
-  } else {
-    const tid = await window.DB.push(`classes/${cfg.classId}/tests`, cfg);
-    S.curTest=tid;
-  }
+  if(S.curTest) await window.DB.write(`classes/${cfg.classId}/tests/${S.curTest}`,cfg);
+  else { const tid=await window.DB.push(`classes/${cfg.classId}/tests`,cfg); S.curTest=tid; }
   syncAnim(); toast(`✓ "${cfg.name}" saqlandi`);
 }
 
-// Quick scan from class list
-function quickScan(clsId, testId) {
-  S.curCls=clsId; S.curTest=testId;
-  fillScSelects(clsId, testId);
-  goTo('scanner');
-  document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'scanner'")) t.classList.add('on'); });
+function quickScan(clsId,testId) {
+  S.curCls=clsId; S.curTest=testId; fillScSelects(clsId,testId); goTo('scanner');
+  document.querySelectorAll('.nt').forEach(t=>{if(t.getAttribute('onclick')?.includes("'scanner'")) t.classList.add('on');});
 }
 
-// Answers modal (from test card)
-function openAnsModal(clsId, testId) {
+function openAnsModal(clsId,testId) {
   S.mdAnsClsId=clsId; S.mdAnsTestId=testId;
   const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
   document.getElementById('mdAnsTitle').textContent=`✅ Javoblar — ${t.name||t.subject}`;
-  const n=t.count||15;
-  const g=document.getElementById('mdAnsGrid'); g.innerHTML='';
+  const n=t.count||15, g=document.getElementById('mdAnsGrid'); g.innerHTML='';
   for(let i=1;i<=n;i++){
     const d=document.createElement('div'); d.className='ac';
     d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ma_${i}" value="${t.correctAnswers?.[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
@@ -803,387 +615,230 @@ function openAnsModal(clsId, testId) {
   openMd('mdAns');
 }
 
-async function deleteTest(cid, tid) {
-  const t = S.classes[cid]?.tests?.[tid];
-  const name = t?.name || t?.subject || 'Test';
+async function deleteTest(cid,tid) {
+  const t=S.classes[cid]?.tests?.[tid], name=t?.name||t?.subject||'Test';
   if(!confirm(`"${name}" testini o'chirishni tasdiqlaysizmi?\nBarcha natijalar ham o'chadi.`)) return;
-  await window.DB.write(`classes/${cid}/tests/${tid}`, null);
+  await window.DB.write(`classes/${cid}/tests/${tid}`,null);
   if(S.curTest===tid) S.curTest=null;
   syncAnim(); toast(`✓ "${name}" o'chirildi`);
 }
 
 async function saveAnsModal() {
-  const cid=S.mdAnsClsId, tid=S.mdAnsTestId;
-  const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
+  const cid=S.mdAnsClsId, tid=S.mdAnsTestId, t=S.classes[cid]?.tests?.[tid]; if(!t) return;
   const n=t.count||15, ca={};
-  for(let i=1;i<=n;i++){const el=document.getElementById('ma_'+i);if(el?.value)ca[i]=el.value.trim().toUpperCase();}
+  for(let i=1;i<=n;i++){const el=document.getElementById('ma_'+i); if(el?.value) ca[i]=el.value.trim().toUpperCase();}
   t.correctAnswers=ca;
   await window.DB.write(`classes/${cid}/tests/${tid}/correctAnswers`,ca);
   closeMd('mdAns'); syncAnim(); toast('✓ Javoblar saqlandi');
 }
 
-// ════════════════════════════════════════════════
-// OMR PDF — full A4, big bubbles, text ID (no QR)
-// ════════════════════════════════════════════════
+// ── OMR PDF ──
 function printOMR() {
   const cfg=getTestCfg();
   if(!cfg.classId){toast('Sinf tanlang');return;}
   if(!cfg.count){toast('Blok kiriting');return;}
   const cls=S.classes[cfg.classId]; if(!cls){toast('Sinf topilmadi');return;}
   const stus=Object.values(cls.students||{}); if(!stus.length){toast('O\'quvchilar yo\'q');return;}
-  genOMRPdf(cfg, cls, stus);
+  genOMRPdf(cfg,cls,stus);
 }
 
-function printOMRTest(clsId, testId) {
+function printOMRTest(clsId,testId) {
   const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
   const cls=S.classes[clsId]; if(!cls) return;
   const stus=Object.values(cls.students||{}); if(!stus.length){toast('O\'quvchilar yo\'q');return;}
-  genOMRPdf(t, cls, stus);
+  genOMRPdf(t,cls,stus);
 }
 
 function makeQRDataUrl(text) {
-  // qrcode-generator library (window.qrcode)
   try {
-    const qr = qrcode(0, 'M');
-    qr.addData(text);
-    qr.make();
-    const modules = qr.getModuleCount();
-    const cellPx = 6;   // kattaroq piksel — o'qish oson
-    const sz = modules * cellPx;
-    const canvas = document.createElement('canvas');
-    canvas.width = sz; canvas.height = sz;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,sz,sz);
-    ctx.fillStyle = '#000000';
-    for(let r=0;r<modules;r++){
-      for(let c=0;c<modules;c++){
-        if(qr.isDark(r,c)) ctx.fillRect(c*cellPx, r*cellPx, cellPx, cellPx);
-      }
-    }
+    const qr=qrcode(0,'M');
+    qr.addData(text); qr.make();
+    const modules=qr.getModuleCount(), cellPx=6, sz=modules*cellPx;
+    const canvas=document.createElement('canvas');
+    canvas.width=sz; canvas.height=sz;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,sz,sz);
+    ctx.fillStyle='#000000';
+    for(let r=0;r<modules;r++) for(let c=0;c<modules;c++) if(qr.isDark(r,c)) ctx.fillRect(c*cellPx,r*cellPx,cellPx,cellPx);
     return canvas.toDataURL('image/png');
-  } catch(e) {
-    return null;
-  }
+  } catch(e){ return null; }
 }
 
-function genOMRPdf(cfg, cls, stus) {
-  const {jsPDF} = window.jspdf;
-  const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
-  const pageW=210, pageH=297, mX=3, mY=3;
-  const cardW = pageW - mX*2;
-  const cardH = (pageH - mY*3) / 2;
-
-  stus.forEach((stu, i) => {
-    const slot = i % 2;
-    if (i > 0 && slot === 0) pdf.addPage();
-    const cardX = mX;
-    const cardY = slot === 0 ? mY : mY*2 + cardH;
-    // Generate real QR for this student
-    const qrData = JSON.stringify({id: stu.id, name: stu.name, cls: cls.name, test: cfg.name});
-    const qrImg = makeQRDataUrl(qrData);
-    drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH, qrImg);
-    if (slot === 0) {
+function genOMRPdf(cfg,cls,stus) {
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({format:'a4',orientation:'portrait',unit:'mm'});
+  const pageW=210,pageH=297,mX=3,mY=3;
+  const cardW=pageW-mX*2, cardH=(pageH-mY*3)/2;
+  stus.forEach((stu,i)=>{
+    const slot=i%2;
+    if(i>0&&slot===0) pdf.addPage();
+    const cardY=slot===0?mY:mY*2+cardH;
+    const qrData=JSON.stringify({id:stu.id,name:stu.name,cls:cls.name,test:cfg.name});
+    drawOMR(pdf,cfg,cls,stu,mX,cardY,cardW,cardH,makeQRDataUrl(qrData));
+    if(slot===0){
       pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
-      pdf.setLineDashPattern([2,2], 0);
-      pdf.line(mX, mY+cardH+mY/2, pageW-mX, mY+cardH+mY/2);
-      pdf.setLineDashPattern([], 0);
+      pdf.setLineDashPattern([2,2],0);
+      pdf.line(mX,mY+cardH+mY/2,pageW-mX,mY+cardH+mY/2);
+      pdf.setLineDashPattern([],0);
     }
   });
   pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
   toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
 }
 
-// Generate QR code into PDF using hidden canvas + jsQR-compatible encoding
-// Uses a simple canvas-based QR via data URI
-function drawQRMatrix(pdf, stuId, stuName, testName, px, py, size) {
-  // Encode data as JSON string — jsQR will decode this
-  const data = JSON.stringify({id: stuId, name: stuName, test: testName});
-  // Use a hidden canvas to render QR via qrcode-generator logic
-  // Fallback: draw a simple visual ID box that scanner reads as text
-  const canvas = document.createElement('canvas');
-  canvas.width = 100; canvas.height = 100;
-  const ctx = canvas.getContext('2d');
+function drawOMR(pdf,cfg,cls,stu,x,y,w,h,qrImg) {
+  const n=cfg.count, OPTS=['A','B','C','D'];
+  const totalMax=getTotalMax(n,cfg.blocks), idStr=stu.id||'XXXX';
+  const SQ=3.8, bR=2.5, bGap=1.2, bStep=bR*2+bGap, numW=8, rowH=5.8, colW=(w-2)/3;
 
-  // Try to generate real QR with browser's built-in approach
-  try {
-    // Use the global QRious or similar if available — otherwise draw barcode-style
-    if (window._qrGen) {
-      const qr = window._qrGen(data);
-      const cells = qr.modules;
-      const mSize = 100 / cells.length;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0,0,100,100);
-      ctx.fillStyle = '#000';
-      cells.forEach((row, r) => row.forEach((cell, c) => {
-        if (cell) ctx.fillRect(c*mSize, r*mSize, mSize, mSize);
-      }));
-      const img = canvas.toDataURL('image/png');
-      pdf.addImage(img, 'PNG', px, py, size, size);
-      return;
-    }
-  } catch(e){}
-
-  // Fallback: draw a compact visual code (4 finder squares + ID dots)
-  // This is a pseudo-QR the scanner reads by finding corner markers + text
-  pdf.setFillColor(255,255,255); pdf.rect(px, py, size, size, 'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.3); pdf.rect(px, py, size, size, 'S');
-  const f = size/7;
-  // 3 finder patterns
-  [[0,0],[size-f*3,0],[0,size-f*3]].forEach(([fx,fy])=>{
-    pdf.setFillColor(0,0,0); pdf.rect(px+fx, py+fy, f*3, f*3, 'F');
-    pdf.setFillColor(255,255,255); pdf.rect(px+fx+f*0.5, py+fy+f*0.5, f*2, f*2, 'F');
-    pdf.setFillColor(0,0,0); pdf.rect(px+fx+f, py+fy+f, f, f, 'F');
-  });
-  // ID text in center
-  pdf.setFontSize(5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(stuId, px+size/2, py+size/2+1.5, {align:'center'});
-}
-
-function drawOMR(pdf, cfg, cls, stu, x, y, w, h, qrImg) {
-  // Xuddi rasmga o'xshash: 3 ustun, Roll No katak grid + 0-9 doira,
-  // Subject/Section matni, har group da ■ alignment square, A B C D sarlavha
-  const n = cfg.count;
-  const OPTS = ['A','B','C','D'];
-  const totalMax = getTotalMax(n, cfg.blocks);
-  const idStr = stu.id || 'XXXX';
-
-  // ── layout constants (rasmga mos) ──
-  const SQ = 3.8;    // alignment square size mm
-  const bR = 2.5;    // bubble radius mm — kichik, rasmga o'xshash
-  const bGap = 1.2;  // gap between bubble edges
-  const bStep = bR*2 + bGap;
-  const numW = 8;    // mm for question number
-  const rowH = 5.8;  // mm per row
-  const colW = (w - 2) / 3;  // 3 equal columns
-
-  // white bg, no border (rasmdagidek ochiq)
   pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
 
-  // helper: draw alignment square ■
-  const sq = (sx, sy) => {
-    pdf.setFillColor(0,0,0);
-    pdf.rect(sx, sy, SQ, SQ, 'F');
-  };
+  const sq=(sx,sy)=>{ pdf.setFillColor(0,0,0); pdf.rect(sx,sy,SQ,SQ,'F'); };
 
-  // helper: draw one bubble row (qNum, at cx,cy)
-  const bubbleRow = (qNum, cx, cy) => {
+  const bubbleRow=(qNum,cx,cy)=>{
     pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-    pdf.text(String(qNum), cx+numW-0.5, cy+bR+0.5, {align:'right'});
-    OPTS.forEach((_,oi)=>{
-      const bx = cx + numW + oi*bStep + bR;
-      pdf.setFillColor(255,255,255);
-      pdf.setDrawColor(0,0,0);
-      pdf.setLineWidth(0.5);
-      pdf.circle(bx, cy+bR, bR, 'FD');
-    });
+    pdf.text(String(qNum),cx+numW-0.5,cy+bR+0.5,{align:'right'});
+    OPTS.forEach((_,oi)=>{ const bx=cx+numW+oi*bStep+bR; pdf.setFillColor(255,255,255); pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5); pdf.circle(bx,cy+bR,bR,'FD'); });
   };
 
-  // helper: draw A B C D header at (cx, cy)
-  const abcdHeader = (cx, cy) => {
+  const abcdHeader=(cx,cy)=>{
     pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-    OPTS.forEach((o,oi)=>{
-      pdf.text(o, cx+numW+oi*bStep+bR, cy+3, {align:'center'});
-    });
+    OPTS.forEach((o,oi)=>pdf.text(o,cx+numW+oi*bStep+bR,cy+3,{align:'center'}));
   };
 
-  // helper: draw alignment square on LEFT of column and RIGHT of page at same row
-  const alignRow = (cx, cy, isLastCol) => {
-    sq(cx - SQ - 1, cy);
-    if (isLastCol) sq(x + w - SQ - 1, cy);
-  };
-
-  // ════════════════════════════════
-  // COLUMN 1 — Roll No + 0-9 + Subject + questions
-  // ════════════════════════════════
-  const c1x = x + 1;
-  let c1y = y + 2;
-
-  // ■ Roll No header with alignment square
-  sq(c1x, c1y + 1);
+  // COLUMN 1
+  const c1x=x+1; let c1y=y+2;
+  sq(c1x,c1y+1);
   pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text('Roll No', c1x + SQ + 1.5, c1y + 4);
+  pdf.text('Roll No',c1x+SQ+1.5,c1y+4);
 
-  // Roll No cell grid — 6 cells, ID chars inside
-  const rnStartX = c1x + SQ + 1.5;
-  const rnStartY = c1y + 5.5;
-  const cellSz = 7;   // kattaroq — skaner uchun
-  const idChars = idStr.padEnd(6,' ').substring(0,6);
+  const rnStartX=c1x+SQ+1.5, rnStartY=c1y+5.5, cellSz=7;
+  const idChars=idStr.padEnd(6,' ').substring(0,6);
   for(let ci=0;ci<6;ci++){
-    const rcx = rnStartX + ci*cellSz;
-    pdf.setFillColor(255,255,255);
-    pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7);
-    pdf.rect(rcx, rnStartY, cellSz, cellSz, 'FD');
-    const ch = idChars[ci].trim();
-    if(ch){
-      pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-      pdf.text(ch, rcx+cellSz/2, rnStartY+cellSz-1.2, {align:'center'});
-    }
+    const rcx=rnStartX+ci*cellSz;
+    pdf.setFillColor(255,255,255); pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7);
+    pdf.rect(rcx,rnStartY,cellSz,cellSz,'FD');
+    const ch=idChars[ci].trim();
+    if(ch){ pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0); pdf.text(ch,rcx+cellSz/2,rnStartY+cellSz-1.2,{align:'center'}); }
   }
-  // ID label under cells
   pdf.setFontSize(5.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,100,100);
-  pdf.text('ID: '+idStr, rnStartX, rnStartY+cellSz+3);
-  // alignment square top-right area
-  sq(x + w - SQ - 1, c1y + 1);
-  c1y += 18; // kattaroq Roll No uchun ko'proq joy
+  pdf.text('ID: '+idStr,rnStartX,rnStartY+cellSz+3);
 
-  // QR kod (o'ng tomonda, Roll No yonida) — skaner shu QR ni o'qiydi
-  const qrSize = 38;                          // katta QR — skanerga qulay
-  const qrX = x + w - qrSize - 3;
-  const qrY = y + 3;                          // yuqori o'ng burchak
-  if (qrImg) {
-    pdf.addImage(qrImg, 'PNG', qrX, qrY, qrSize, qrSize);
-  } else {
-    drawQRMatrix(pdf, stu.id, stu.name, cfg.name, qrX, qrY, qrSize);
+  // QR — top right, big
+  const qrSize=38, qrX=x+w-qrSize-3, qrY=y+3;
+  if(qrImg) pdf.addImage(qrImg,'PNG',qrX,qrY,qrSize,qrSize);
+  else {
+    // fallback finder patterns
+    pdf.setFillColor(255,255,255); pdf.rect(qrX,qrY,qrSize,qrSize,'F');
+    pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.3); pdf.rect(qrX,qrY,qrSize,qrSize,'S');
+    const f=qrSize/7;
+    [[0,0],[qrSize-f*3,0],[0,qrSize-f*3]].forEach(([fx,fy])=>{
+      pdf.setFillColor(0,0,0); pdf.rect(qrX+fx,qrY+fy,f*3,f*3,'F');
+      pdf.setFillColor(255,255,255); pdf.rect(qrX+fx+f*0.5,qrY+fy+f*0.5,f*2,f*2,'F');
+      pdf.setFillColor(0,0,0); pdf.rect(qrX+fx+f,qrY+fy+f,f,f,'F');
+    });
+    pdf.setFontSize(5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+    pdf.text(idStr,qrX+qrSize/2,qrY+qrSize/2+1.5,{align:'center'});
   }
   pdf.setFontSize(5.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80);
-  pdf.text('QR — skanerlang', qrX + qrSize/2, qrY + qrSize + 3, {align:'center'});
+  pdf.text('QR — skanerlang',qrX+qrSize/2,qrY+qrSize+3,{align:'center'});
 
-  // O'quvchi ismi
+  sq(x+w-SQ-1,c1y+1);
+  c1y+=18;
+
+  // student name + info
   pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  const shortName = stu.name.length > 28 ? stu.name.substring(0,26)+'…' : stu.name;
-  pdf.text(shortName, c1x + SQ + 1, c1y + 4);
-  c1y += 8;
-
-  // Subject / Section label
-  c1y += 2;
+  pdf.text(stu.name.length>28?stu.name.substring(0,26)+'…':stu.name,c1x+SQ+1,c1y+4);
+  c1y+=9;
   pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(cfg.subject, c1x + SQ + 1, c1y + 3);
-  c1y += 5;
+  pdf.text(cfg.subject,c1x+SQ+1,c1y+3); c1y+=5;
   pdf.setFontSize(6); pdf.setFont('helvetica','normal');
-  pdf.text(cfg.name + '  ' + cls.name + '  ' + fmtD(cfg.date), c1x + SQ + 1, c1y + 3);
-  c1y += 6;
+  pdf.text(cfg.name+'  '+cls.name+'  '+fmtD(cfg.date),c1x+SQ+1,c1y+3); c1y+=7;
 
-  // Column 1 questions
-  const col1Count = Math.ceil(n * 0.28); // ~28% of questions in col1
-  abcdHeader(c1x + SQ + 1, c1y); c1y += 4.5;
-  for(let i=1; i<=col1Count && i<=n; i++){
-    if(i>1 && (i-1)%5===0){
-      // alignment square left
-      sq(c1x, c1y);
-    }
-    bubbleRow(i, c1x + SQ + 1, c1y);
-    c1y += rowH;
+  const col1Count=Math.ceil(n*0.28);
+  abcdHeader(c1x+SQ+1,c1y); c1y+=4.5;
+  for(let i=1;i<=col1Count&&i<=n;i++){
+    if(i>1&&(i-1)%5===0) sq(c1x,c1y);
+    bubbleRow(i,c1x+SQ+1,c1y); c1y+=rowH;
   }
 
-  // ════════════════════════════════
-  // COLUMN 2 — mid questions
-  // ════════════════════════════════
-  const c2x = x + colW + 1;
-  let c2y = y + 2;
-  const col2Start = col1Count + 1;
-  const col2Count = Math.ceil(n * 0.36); // ~36% mid
-  const col2End = Math.min(col1Count + col2Count, n);
-
-  // alignment square top of col2
-  sq(c2x - SQ - 1, c2y + 1);
-
-  abcdHeader(c2x, c2y + 3); c2y += 7.5;
-
-  let groupStart = col2Start;
-  while(groupStart <= col2End){
-    const groupEnd = Math.min(groupStart + 4, col2End); // groups of ~5
-    for(let i=groupStart; i<=groupEnd; i++){
-      if(i===groupStart && groupStart > col2Start){
-        // ■ before group + repeat header
-        sq(c2x - SQ - 1, c2y);
-        abcdHeader(c2x, c2y+3); c2y += 4.5;
-      }
-      bubbleRow(i, c2x, c2y); c2y += rowH;
+  // COLUMN 2
+  const c2x=x+colW+1; let c2y=y+2;
+  const col2Start=col1Count+1, col2End=Math.min(col1Count+Math.ceil(n*0.36),n);
+  sq(c2x-SQ-1,c2y+1);
+  abcdHeader(c2x,c2y+3); c2y+=7.5;
+  let g2=col2Start;
+  while(g2<=col2End){
+    const gEnd=Math.min(g2+4,col2End);
+    for(let i=g2;i<=gEnd;i++){
+      if(i===g2&&g2>col2Start){ sq(c2x-SQ-1,c2y); abcdHeader(c2x,c2y+3); c2y+=4.5; }
+      bubbleRow(i,c2x,c2y); c2y+=rowH;
     }
-    groupStart = groupEnd + 1;
+    g2=gEnd+1;
   }
 
-  // ════════════════════════════════
-  // COLUMN 3 — right questions
-  // ════════════════════════════════
-  const c3x = x + colW*2 + 1;
-  let c3y = y + 2;
-  const col3Start = col2End + 1;
-
-  // alignment square top of col3
-  sq(x + w - SQ - 1, c3y + 1);
-
-  abcdHeader(c3x, c3y + 3); c3y += 7.5;
-
-  let g3Start = col3Start;
-  while(g3Start <= n){
-    const g3End = Math.min(g3Start + 4, n);
-    for(let i=g3Start; i<=g3End; i++){
-      if(i===g3Start && g3Start > col3Start){
-        sq(x+w-SQ-1, c3y);
-        abcdHeader(c3x, c3y+3); c3y += 4.5;
-      }
-      bubbleRow(i, c3x, c3y); c3y += rowH;
+  // COLUMN 3
+  const c3x=x+colW*2+1; let c3y=y+2;
+  const col3Start=col2End+1;
+  sq(x+w-SQ-1,c3y+1);
+  abcdHeader(c3x,c3y+3); c3y+=7.5;
+  let g3=col3Start;
+  while(g3<=n){
+    const gEnd=Math.min(g3+4,n);
+    for(let i=g3;i<=gEnd;i++){
+      if(i===g3&&g3>col3Start){ sq(x+w-SQ-1,c3y); abcdHeader(c3x,c3y+3); c3y+=4.5; }
+      bubbleRow(i,c3x,c3y); c3y+=rowH;
     }
-    g3Start = g3End + 1;
+    g3=gEnd+1;
   }
 
-  // ════════════════════════════════
-  // 4 corner squares (bottom)
-  // ════════════════════════════════
-  sq(c1x, y + h - SQ - 2);
-  sq(c2x - SQ - 1, y + h - SQ - 2);
-  sq(x + w - SQ - 1, y + h - SQ - 2);
+  // bottom corner squares
+  sq(c1x,y+h-SQ-2); sq(c2x-SQ-1,y+h-SQ-2); sq(x+w-SQ-1,y+h-SQ-2);
 
-  // ════════════════════════════════
-  // Footer: Ball + ID text
-  // ════════════════════════════════
-  const footY = y + h - 9;
-  pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3);
-  pdf.line(x+2, footY, x+w-2, footY);
+  // footer
+  const footY=y+h-9;
+  pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3); pdf.line(x+2,footY,x+w-2,footY);
   pdf.setFontSize(7); pdf.setFont('helvetica','normal'); pdf.setTextColor(0,0,0);
-  pdf.text(`Ball: _______ / ${totalMax.toFixed(1)}   |   Foiz: _______ %`, x+4, footY+4);
+  pdf.text(`Ball: _______ / ${totalMax.toFixed(1)}   |   Foiz: _______ %`,x+4,footY+4);
   pdf.setFontSize(9); pdf.setFont('helvetica','bold');
-  pdf.text(idStr, x+w-6, footY+5, {align:'right'});
+  pdf.text(idStr,x+w-6,footY+5,{align:'right'});
   pdf.setFontSize(5); pdf.setTextColor(120,120,120);
-  pdf.text(stu.name.substring(0,24), x+4, footY+8);
+  pdf.text(stu.name.substring(0,24),x+4,footY+8);
 }
 
-// ════════════════════════════════════════════════
-// SCANNER
-// ════════════════════════════════════════════════
-function fillScSelects(preselectCls, preselectTest) {
+// ── SCANNER ──
+function fillScSelects(preselectCls,preselectTest) {
   const el=document.getElementById('scCls');
   el.innerHTML='<option value="">Sinf</option>';
   Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
-  const useCls = preselectCls || S.curCls;
-  if(useCls){el.value=useCls;scLoadTest(preselectTest);}
+  const useCls=preselectCls||S.curCls;
+  if(useCls){el.value=useCls; scLoadTest(preselectTest);}
 }
 
 function scLoadTest(preselectTest) {
-  const cid=document.getElementById('scCls').value;
-  const el=document.getElementById('scTest');
+  const cid=document.getElementById('scCls').value, el=document.getElementById('scTest');
   el.innerHTML='<option value="">Test</option>';
-  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>
-    el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
-  const useTest = preselectTest || S.curTest;
-  if(useTest){ el.value=useTest; }
+  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
+  const useTest=preselectTest||S.curTest;
+  if(useTest) el.value=useTest;
   scLoadAnswers();
 }
 
 function scLoadAnswers() {
-  const cid=document.getElementById('scCls').value;
-  const tid=document.getElementById('scTest').value;
+  const cid=document.getElementById('scCls').value, tid=document.getElementById('scTest').value;
   const t=S.classes[cid]?.tests?.[tid];
-
-  // Load student list
   const el=document.getElementById('scStu');
   el.innerHTML='<option value="">— Avtomatik aniqlanadi —</option>';
-  Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>
-    el.innerHTML+=`<option value="${sid}">${s.name} (${s.id})</option>`);
-
-  // Show test info
+  Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>el.innerHTML+=`<option value="${sid}">${s.name} (${s.id})</option>`);
   const info=document.getElementById('scTestInfo');
   if(t) info.textContent=`${t.count} ta savol · maks ${getTotalMax(t.count,t.blocks).toFixed(1)} ball`;
   else info.textContent='';
-
   renderManGrid();
 }
 
 function renderManGrid() {
   const cid=document.getElementById('scCls').value, tid=document.getElementById('scTest').value;
-  const t=S.classes[cid]?.tests?.[tid]; const n=t?.count||15;
+  const t=S.classes[cid]?.tests?.[tid], n=t?.count||15;
   const g=document.getElementById('manGrid'); g.innerHTML='';
   for(let i=1;i<=n;i++){
     const d=document.createElement('div'); d.className='ac';
@@ -1194,37 +849,25 @@ function renderManGrid() {
 
 async function startCam() {
   try {
-    S.cam=await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:'environment',
-        width:{ideal:1920},
-        height:{ideal:1080}
-      }
-    });
+    S.cam=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
     document.getElementById('camVid').srcObject=S.cam;
-    // rotate hint for landscape sheet
     document.getElementById('scanBox').style.display='block';
-    S.scanTick=setInterval(scanFrame,700); toast('📷 Kamera yoqildi — varoqni YOTIQ tuting');
+    S.scanTick=setInterval(scanFrame,600); toast('📷 Kamera yoqildi — QR kodni tuting');
   } catch(e){ toast('⚠️ Kameraga ruxsat kerak'); }
 }
 
 function stopCam() {
-  if(S.cam){S.cam.getTracks().forEach(t=>t.stop());S.cam=null;}
-  clearInterval(S.scanTick);
-  document.getElementById('scanBox').style.display='none';
+  if(S.cam){S.cam.getTracks().forEach(t=>t.stop()); S.cam=null;}
+  clearInterval(S.scanTick); document.getElementById('scanBox').style.display='none';
 }
 
 function scanFrame() {
   const v=document.getElementById('camVid'); if(v.readyState<2) return;
-  const c=document.getElementById('camCvs');
-  c.width=v.videoWidth; c.height=v.videoHeight;
+  const c=document.getElementById('camCvs'); c.width=v.videoWidth; c.height=v.videoHeight;
   const ctx=c.getContext('2d'); ctx.drawImage(v,0,0);
   const d=ctx.getImageData(0,0,c.width,c.height);
   const qr=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});
-  if(qr){
-    parseQR(qr.data);
-    toast('✅ QR aniqlandi!');
-  }
+  if(qr){ parseQR(qr.data); }
 }
 
 function uploadImg(input) {
@@ -1235,8 +878,8 @@ function uploadImg(input) {
       c.getContext('2d').drawImage(img,0,0);
       const d=c.getContext('2d').getImageData(0,0,img.width,img.height);
       const qr=jsQR(d.data,d.width,d.height);
-      if(qr){parseQR(qr.data);toast('✓ QR aniqlandi');}
-      else toast('QR topilmadi. ID yoki qo\'lda kiriting.');
+      if(qr){parseQR(qr.data); toast('✓ QR aniqlandi');}
+      else toast('QR topilmadi. Qo\'lda kiriting.');
     }; img.src=e.target.result;
   }; r.readAsDataURL(f);
 }
@@ -1245,31 +888,23 @@ function parseQR(data) {
   try {
     const p=JSON.parse(data);
     const cid=document.getElementById('scCls').value;
-    if(p.sid){
-      document.getElementById('scStu').value=p.sid;
-      if(p.answers){Object.entries(p.answers).forEach(([q,a])=>{const el=document.getElementById('m_'+q);if(el)el.value=a;});checkNow();}
-    } else if(p.id){
-      Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{if(s.id===p.id)document.getElementById('scStu').value=sid;});
+    if(p.id){
+      let found=false;
+      Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{
+        if(s.id===p.id){ document.getElementById('scStu').value=sid; toast(`✅ ${s.name} aniqlandi`); found=true; }
+      });
+      if(!found) toast('O\'quvchi topilmadi: '+p.id);
     }
-  } catch(e){
-    // Try plain ID text
-    tryMatchID(data.trim());
-  }
+  } catch(e){ tryMatchID(data.trim()); }
 }
 
-// Match plain text ID from titul varoq
 function tryMatchID(idText) {
-  const cid=document.getElementById('scCls').value;
-  if(!cid) return;
+  const cid=document.getElementById('scCls').value; if(!cid) return;
   let found=false;
   Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{
-    if(s.id && s.id.toUpperCase()===idText.toUpperCase()){
-      document.getElementById('scStu').value=sid;
-      toast(`✓ Aniqlandi: ${s.name}`);
-      found=true;
-    }
+    if(s.id&&s.id.toUpperCase()===idText.toUpperCase()){ document.getElementById('scStu').value=sid; toast(`✅ ${s.name} aniqlandi`); found=true; }
   });
-  if(!found) toast(`ID: ${idText} — topilmadi`);
+  if(!found) toast('ID topilmadi: '+idText);
 }
 
 function checkNow() {
@@ -1279,21 +914,19 @@ function checkNow() {
   if(!sid){toast('⚠️ O\'quvchini tanlang — QR ni skanerlang yoki ro\'yxatdan tanlang');return;}
   const t=S.classes[cid]?.tests?.[tid]; if(!t){toast('Test topilmadi');return;}
   const given={};
-  for(let i=1;i<=t.count;i++){const el=document.getElementById('m_'+i);if(el?.value.trim())given[i]=el.value.trim().toUpperCase();}
+  for(let i=1;i<=t.count;i++){const el=document.getElementById('m_'+i); if(el?.value.trim()) given[i]=el.value.trim().toUpperCase();}
   let corr=0,earned=0,total=0;
   for(let i=1;i<=t.count;i++){
     const s=getScore(i,t.blocks); total+=s;
     if(given[i]&&given[i]===(t.correctAnswers?.[i]||'')){corr++;earned+=s;}
   }
   const pct=total>0?Math.round(earned/total*100):0;
-  const stuSel=document.getElementById('scStu');
-  const stuName=sid?(S.classes[cid]?.students?.[sid]?.name||'Noma\'lum'):'Noma\'lum';
+  const stuName=S.classes[cid]?.students?.[sid]?.name||'Noma\'lum';
   const col=pct>=85?'var(--g)':pct>=50?'var(--y)':'var(--r)';
   let bubbles='';
   for(let i=1;i<=t.count;i++){
     const a=given[i]||'',ri=t.correctAnswers?.[i]||'';
-    const cls2=!ri?'rn':a===ri?'rg':'rr';
-    bubbles+=`<span class="rb ${cls2}" title="${i}: ${a||'—'} / ${ri||'?'}">${i}</span>`;
+    bubbles+=`<span class="rb ${!ri?'rn':a===ri?'rg':'rr'}" title="${i}: ${a||'—'} / ${ri||'?'}">${i}</span>`;
   }
   document.getElementById('resCard').style.display='block';
   document.getElementById('resBody').innerHTML=`
@@ -1313,8 +946,7 @@ function checkNow() {
 
 async function saveRes() {
   const r=S.pendRes; if(!r) return;
-  const key=r.sid||'anon_'+Date.now();
-  await window.DB.write(`classes/${r.cid}/tests/${r.tid}/results/${key}`,{
+  await window.DB.write(`classes/${r.cid}/tests/${r.tid}/results/${r.sid}`,{
     stuName:r.stuName, earned:r.earned, total:r.total, pct:r.pct, correct:r.corr, given:r.given, savedAt:Date.now()
   });
   S.pendRes=null; syncAnim(); toast('✓ Saqlandi');
@@ -1323,22 +955,18 @@ async function saveRes() {
   document.getElementById('scStu').value='';
 }
 
-// ════════════════════════════════════════════════
-// RESULTS
-// ════════════════════════════════════════════════
+// ── RESULTS ──
 function fillResSelects() {
   const el=document.getElementById('rCls');
   el.innerHTML='<option value="">Sinf</option>';
   Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
-  if(S.curCls){el.value=S.curCls;rLoadTest();}
+  if(S.curCls){el.value=S.curCls; rLoadTest();}
 }
 
 function rLoadTest() {
-  const cid=document.getElementById('rCls').value;
-  const el=document.getElementById('rTest');
+  const cid=document.getElementById('rCls').value, el=document.getElementById('rTest');
   el.innerHTML='<option value="">Test</option>';
-  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>
-    el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
+  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
   if(S.curTest) el.value=S.curTest;
   renderRes();
 }
@@ -1348,51 +976,31 @@ function renderRes() {
   if(!cid||!tid){
     document.getElementById('rHead').innerHTML='';
     document.getElementById('rBody').innerHTML='<tr><td style="color:var(--m);padding:16px">Sinf va testni tanlang</td></tr>';
-    document.getElementById('stT').textContent='0';
-    document.getElementById('stC').textContent='0';
-    document.getElementById('stA').textContent='—';
+    ['stT','stC','stA'].forEach(id=>document.getElementById(id).textContent=id==='stA'?'—':'0');
     return;
   }
   const cls=S.classes[cid], t=cls?.tests?.[tid]; if(!t) return;
   const stus=Object.values(cls.students||{}), res=t.results||{};
-  const checked=Object.keys(res).length;
-  const scores=Object.values(res).map(r=>r.pct);
+  const checked=Object.keys(res).length, scores=Object.values(res).map(r=>r.pct);
   const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
   document.getElementById('stT').textContent=stus.length;
   document.getElementById('stC').textContent=checked;
   document.getElementById('stA').textContent=avg?avg+'%':'—';
-
   let hh=`<tr><th>#</th><th>F.I.Sh</th>`;
   for(let i=1;i<=t.count;i++) hh+=`<th title="${getScore(i,t.blocks)}b">${i}</th>`;
   hh+=`<th>Ball</th><th>Max</th><th>%</th><th>Baho</th></tr>`;
   document.getElementById('rHead').innerHTML=hh;
-
-  const rById={};
-  Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
-
+  const rById={}; Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
   document.getElementById('rBody').innerHTML=stus.map((s,i)=>{
-    const r=rById[s.id];
-    let cells='';
-    for(let q=1;q<=t.count;q++){
-      const a=r?.given?.[q]||'', ri=t.correctAnswers?.[q]||'', ok=a&&a===ri;
-      cells+=`<td style="color:${ok?'#137333':'#a50e0e'};font-weight:700">${a||'—'}</td>`;
-    }
-    if(r){
-      const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
-      const cc=r.pct>=85?'cg':r.pct>=50?'cy':'cr';
-      return `<tr><td>${i+1}</td><td>${s.name}</td>${cells}
-        <td class="${cc}">${r.earned.toFixed(1)}</td>
-        <td style="color:var(--m)">${r.total.toFixed(1)}</td>
-        <td class="${cc}">${r.pct}%</td>
-        <td class="${cc}">${gr}</td></tr>`;
-    }
+    const r=rById[s.id]; let cells='';
+    for(let q=1;q<=t.count;q++){const a=r?.given?.[q]||'',ri=t.correctAnswers?.[q]||'',ok=a&&a===ri; cells+=`<td style="color:${ok?'#137333':'#a50e0e'};font-weight:700">${a||'—'}</td>`;}
+    if(r){const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2,cc=r.pct>=85?'cg':r.pct>=50?'cy':'cr';
+      return `<tr><td>${i+1}</td><td>${s.name}</td>${cells}<td class="${cc}">${r.earned.toFixed(1)}</td><td style="color:var(--m)">${r.total.toFixed(1)}</td><td class="${cc}">${r.pct}%</td><td class="${cc}">${gr}</td></tr>`;}
     return `<tr><td>${i+1}</td><td style="color:var(--m)">${s.name}</td>${'<td>—</td>'.repeat(t.count)}<td>—</td><td>${getTotalMax(t.count,t.blocks).toFixed(1)}</td><td>—</td><td>—</td></tr>`;
   }).join('');
 }
 
-// ════════════════════════════════════════════════
-// EXCEL — formulalar bilan
-// ════════════════════════════════════════════════
+// ── EXCEL ──
 function exportExcel() {
   const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
   if(!cid||!tid){toast('Sinf va testni tanlang');return;}
@@ -1400,108 +1008,65 @@ function exportExcel() {
   const stus=Object.values(cls.students||{}), res=t.results||{};
   const rById={}; Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
   const maxB=getTotalMax(t.count,t.blocks);
-
-  const wb=XLSX.utils.book_new();
-  const rows=[];
-  rows.push([`${t.name||t.subject} | ${cls.name} | ${t.year||''}`]);
-  rows.push([]);
-  const hdr=['#','F.I.Sh',...Array.from({length:t.count},(_,i)=>`S${i+1}(${getScore(i+1,t.blocks)}b)`),'Ball','Maks','Foiz %','Baho'];
-  rows.push(hdr);
-
+  const wb=XLSX.utils.book_new(), rows=[];
+  rows.push([`${t.name||t.subject} | ${cls.name} | ${t.year||''}`]); rows.push([]);
+  rows.push(['#','F.I.Sh',...Array.from({length:t.count},(_,i)=>`S${i+1}(${getScore(i+1,t.blocks)}b)`),'Ball','Maks','Foiz %','Baho']);
   stus.forEach((s,i)=>{
     const r=rById[s.id], row=[i+1,s.name];
     for(let q=1;q<=t.count;q++) row.push(r?.given?.[q]||'');
-    const ballCol=XLSX.utils.encode_col(t.count+2);
-    const maxCol=XLSX.utils.encode_col(t.count+3);
-    const rowNum=i+4;
-    if(r){
-      row.push(r.earned, maxB);
-      row.push({f:`ROUND(${ballCol}${rowNum}/${maxCol}${rowNum}*100,1)`});
-      row.push({f:`IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.85,5,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.7,4,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.5,3,2)))`});
-    } else {
-      row.push('',maxB,'','');
-    }
+    const bCol=XLSX.utils.encode_col(t.count+2), mCol=XLSX.utils.encode_col(t.count+3), rn=i+4;
+    if(r){ row.push(r.earned,maxB,{f:`ROUND(${bCol}${rn}/${mCol}${rn}*100,1)`},{f:`IF(${bCol}${rn}/${mCol}${rn}>=0.85,5,IF(${bCol}${rn}/${mCol}${rn}>=0.7,4,IF(${bCol}${rn}/${mCol}${rn}>=0.5,3,2)))`}); }
+    else row.push('',maxB,'','');
     rows.push(row);
   });
-
-  rows.push([]);
-  const pctCol=XLSX.utils.encode_col(t.count+4);
-  rows.push(['','O\'RTACHA:','','','','','',
-    {f:`ROUND(AVERAGEIF(${pctCol}4:${pctCol}${stus.length+3},"<>",${pctCol}4:${pctCol}${stus.length+3}),1)`}
-  ]);
-  rows.push([`O'qituvchi: ${cls.teacher||'—'}`, `Sana: ${fmtD(t.date)}`]);
-
+  rows.push([]); rows.push([`O'qituvchi: ${cls.teacher||'—'}`,`Sana: ${fmtD(t.date)}`]);
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:4},{wch:26},...Array(t.count).fill({wch:7}),{wch:8},{wch:7},{wch:8},{wch:7}];
   ws['!freeze']={xSplit:2,ySplit:3};
   XLSX.utils.book_append_sheet(wb,ws,'Natijalar');
-
-  const ca=[['Savol','To\'g\'ri','Ball']];
+  const ca=[['Savol',"To'g'ri",'Ball']];
   for(let i=1;i<=t.count;i++) ca.push([i,t.correctAnswers?.[i]||'',getScore(i,t.blocks)]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ca),'Javoblar');
-
   XLSX.writeFile(wb,`${cls.name}-${t.name||t.subject}-${t.date}.xlsx`);
-  toast('✓ Excel (formulali) yuklab olindi');
+  toast('✓ Excel yuklab olindi');
 }
 
-// ════════════════════════════════════════════════
-// PDF NATIJALAR
-// ════════════════════════════════════════════════
+// ── PDF NATIJALAR ──
 function exportPDF() {
   const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
   if(!cid||!tid){toast('Sinf va testni tanlang');return;}
   const cls=S.classes[cid], t=cls?.tests?.[tid];
   const stus=Object.values(cls.students||{}), res=t.results||{};
   const rById={}; Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
-
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({format:'a4',orientation:'landscape',unit:'mm'});
   const W=297,H=210;
-
   pdf.setFillColor(26,115,232); pdf.rect(0,0,W,18,'F');
   pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
   pdf.text(`${t.name||t.subject} | ${cls.name} | ${t.year||''}`,W/2,11,{align:'center'});
   pdf.setFontSize(7); pdf.setFont('helvetica','normal');
-  pdf.text(`O'qituvchi: ${cls.teacher||'—'}  |  Sana: ${fmtD(t.date)}  |  Maks ball: ${getTotalMax(t.count,t.blocks).toFixed(1)}`,W/2,16,{align:'center'});
-
-  let y=26, rH=7;
-  const maxShow=Math.min(t.count,18);
-  const offA=46+maxShow*11;
-
+  pdf.text(`O'qituvchi: ${cls.teacher||'—'}  |  Sana: ${fmtD(t.date)}  |  Maks: ${getTotalMax(t.count,t.blocks).toFixed(1)}`,W/2,16,{align:'center'});
+  let y=26, rH=7, maxShow=Math.min(t.count,18), offA=46+maxShow*11;
   pdf.setFillColor(240,246,255); pdf.rect(4,y-5,W-8,rH,'F');
   pdf.setTextColor(26,115,232); pdf.setFontSize(7); pdf.setFont('helvetica','bold');
   pdf.text('#',6,y); pdf.text('F.I.Sh',12,y);
   for(let i=1;i<=maxShow;i++) pdf.text(String(i),46+i*11,y,{align:'center'});
-  pdf.text('Ball',offA,y,{align:'center'});
-  pdf.text('%',offA+13,y,{align:'center'});
-  pdf.text('B',offA+24,y,{align:'center'});
+  pdf.text('Ball',offA,y,{align:'center'}); pdf.text('%',offA+13,y,{align:'center'}); pdf.text('B',offA+24,y,{align:'center'});
   y+=rH;
-
   stus.forEach((s,i)=>{
     if(y>H-14){pdf.addPage();y=14;}
     const r=rById[s.id];
-    if(i%2===0){pdf.setFillColor(249,250,255);pdf.rect(4,y-5,W-8,rH,'F');}
+    if(i%2===0){pdf.setFillColor(249,250,255); pdf.rect(4,y-5,W-8,rH,'F');}
     pdf.setTextColor(50,50,50); pdf.setFont('helvetica','normal'); pdf.setFontSize(7);
     pdf.text(String(i+1),6,y); pdf.text(s.name.substring(0,22),12,y);
-    for(let q=1;q<=maxShow;q++){
-      const a=r?.given?.[q]||'',ri=t.correctAnswers?.[q]||'',ok=a&&a===ri;
-      if(a){pdf.setTextColor(ok?20:180,ok?130:20,ok?50:20);pdf.text(a,46+q*11,y,{align:'center'});}
-    }
-    if(r){
-      const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
-      const c=r.pct>=85?[20,130,50]:r.pct>=50?[180,110,0]:[180,20,20];
+    for(let q=1;q<=maxShow;q++){const a=r?.given?.[q]||'',ri=t.correctAnswers?.[q]||'',ok=a&&a===ri; if(a){pdf.setTextColor(ok?20:180,ok?130:20,ok?50:20); pdf.text(a,46+q*11,y,{align:'center'});}}
+    if(r){const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2, c=r.pct>=85?[20,130,50]:r.pct>=50?[180,110,0]:[180,20,20];
       pdf.setTextColor(...c); pdf.setFont('helvetica','bold');
-      pdf.text(r.earned.toFixed(1),offA,y,{align:'center'});
-      pdf.text(r.pct+'%',offA+13,y,{align:'center'});
-      pdf.text(String(gr),offA+24,y,{align:'center'});
-    } else {
-      pdf.setTextColor(180,180,180); pdf.text('—',offA,y,{align:'center'});
-    }
+      pdf.text(r.earned.toFixed(1),offA,y,{align:'center'}); pdf.text(r.pct+'%',offA+13,y,{align:'center'}); pdf.text(String(gr),offA+24,y,{align:'center'});
+    } else {pdf.setTextColor(180,180,180); pdf.text('—',offA,y,{align:'center'});}
     pdf.setDrawColor(220,220,220); pdf.line(4,y+2,W-4,y+2); y+=rH;
   });
-
-  const vals=Object.values(res);
-  const avg=vals.length?Math.round(vals.reduce((a,r)=>a+r.pct,0)/vals.length):0;
+  const vals=Object.values(res), avg=vals.length?Math.round(vals.reduce((a,r)=>a+r.pct,0)/vals.length):0;
   pdf.setFillColor(26,115,232); pdf.rect(0,H-9,W,9,'F');
   pdf.setTextColor(255,255,255); pdf.setFontSize(7);
   pdf.text(`O'rtacha: ${avg}%  |  Tekshirilgan: ${vals.length}/${stus.length}`,W/2,H-4,{align:'center'});
@@ -1509,12 +1074,9 @@ function exportPDF() {
   toast('✓ PDF yuklab olindi');
 }
 
-// ════════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════════
+// ── HELPERS ──
 function fillClsSelects() {
-  const el=document.getElementById('tCls');
-  const cur=el.value;
+  const el=document.getElementById('tCls'), cur=el.value;
   el.innerHTML='<option value="">— Sinf tanlang —</option>';
   Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
   if(cur) el.value=cur;
