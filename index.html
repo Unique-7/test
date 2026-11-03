@@ -728,8 +728,6 @@ function getTestConfig() {
 
 function openNewTest() {
   if (APP.curClass) document.getElementById('tClass').value = APP.curClass;
-  nav({currentTarget: document.querySelectorAll('.ntab')[1]}, 'test');
-  // manual nav
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
   document.getElementById('page-test').classList.add('on');
@@ -852,98 +850,126 @@ function drawOMRCard(pdf, cfg, cls, stu, x, y, w, h) {
   pdf.setLineWidth(0.3);
 
   // ── OMR BUBBLE GRID ──
-  // Layout: 3 columns of questions
-  const omrY = hy + 3;
-  const nCols = 3;
+  // Available height for bubbles (leave 22mm for bottom bar)
+  const omrTop = hy + 4;
+  const omrBot = y + h - 22;
+  const omrH = omrBot - omrTop;
+
+  // Auto-fit: calculate rowH so bubbles fill available space
+  const nCols = n <= 20 ? 2 : 3;
   const rowsPerCol = Math.ceil(n / nCols);
-  const colW = (w - M*2 - 2) / nCols;
-  const rowH = 6.5; // mm per row
-  const bubbleR = 2.2; // radius mm
-  const numW = 7;  // space for question number
+  const rowH = Math.min(12, Math.floor(omrH / (rowsPerCol + 1))); // +1 for header
+  const bubbleR = Math.min(3.8, (rowH - 2) / 2); // big circles
+  const colW = (w - M*2 - 4) / nCols;
+  const numW = 10;
+  const bubbleStep = bubbleR*2 + 2;
 
-  pdf.setFontSize(6);
+  // Column headers
+  pdf.setFontSize(8);
   pdf.setFont('helvetica','bold');
-
-  // Column headers: A B C D
   for (let c = 0; c < nCols; c++) {
-    const cx = x + M + 1 + c * colW;
-    pdf.setTextColor(80,80,80);
+    const cx = x + M + 2 + c * colW;
+    pdf.setTextColor(60,60,60);
+    // Col separator line
+    if (c > 0) {
+      pdf.setDrawColor(200,200,200);
+      pdf.setLineWidth(0.3);
+      pdf.line(cx - 2, omrTop, cx - 2, omrBot);
+    }
     OPTS.forEach((opt, oi) => {
-      const bx = cx + numW + oi * (bubbleR*2 + 1.5) + bubbleR;
-      pdf.text(opt, bx, omrY + 3, {align:'center'});
+      const bx = cx + numW + oi * bubbleStep + bubbleR;
+      pdf.text(opt, bx, omrTop + 4, {align:'center'});
     });
   }
 
   for (let i = 1; i <= n; i++) {
     const col = Math.floor((i-1) / rowsPerCol);
     const row = (i-1) % rowsPerCol;
-    const cx = x + M + 1 + col * colW;
-    const qy = omrY + 5 + row * rowH;
+    const cx = x + M + 2 + col * colW;
+    const qy = omrTop + 6 + (row + 1) * rowH;
 
-    // Row bg (alternating)
+    // Alternating row bg
     if (row % 2 === 0) {
-      pdf.setFillColor(248,248,248);
-      pdf.rect(cx, qy - 2.5, colW - 1, rowH - 0.5, 'F');
+      pdf.setFillColor(246,248,252);
+      pdf.rect(cx, qy - rowH/2 - 0.5, colW - 2, rowH, 'F');
     }
 
     // Question number
-    pdf.setFontSize(6.5);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica','bold');
     pdf.setTextColor(0,0,0);
-    pdf.text(String(i), cx + numW - 2, qy + 2, {align:'right'});
+    pdf.text(String(i), cx + numW - 1, qy + 2, {align:'right'});
 
-    // Score (small)
+    // Score
     const sc = getScore(i, cfg.blocks);
-    pdf.setFontSize(4.5);
-    pdf.setTextColor(120,120,120);
-    pdf.text(`${sc}b`, cx + numW + 0.5, qy + 2);
+    pdf.setFontSize(5);
+    pdf.setTextColor(150,150,150);
+    pdf.text(`${sc}b`, cx + numW + 0.5, qy - 1);
 
-    // Bubbles
+    // Big bubbles
     OPTS.forEach((opt, oi) => {
-      const bx = cx + numW + oi * (bubbleR*2 + 1.5) + bubbleR + 4;
-      const by = qy;
+      const bx = cx + numW + oi * bubbleStep + bubbleR + 5;
       pdf.setFillColor(255,255,255);
-      pdf.setDrawColor(30,30,30);
-      pdf.setLineWidth(0.5);
-      pdf.circle(bx, by, bubbleR, 'FD');
+      pdf.setDrawColor(20,20,20);
+      pdf.setLineWidth(0.6);
+      pdf.circle(bx, qy, bubbleR, 'FD');
     });
   }
 
-  // ── BOTTOM: TOTAL + ID + MINI QR-LIKE BOX ──
-  const botY = y + h - 14;
-  pdf.setLineWidth(0.4);
+  // ── BOTTOM BAR: total + QR-style ID ──
+  const botY = y + h - 20;
+  pdf.setDrawColor(0,0,0);
+  pdf.setLineWidth(0.6);
   pdf.line(x+M, botY, x+w-M, botY);
 
-  // Total fields
-  pdf.setFontSize(7);
+  // Left: score fields
+  pdf.setFontSize(8);
   pdf.setFont('helvetica','bold');
   pdf.setTextColor(0,0,0);
-  pdf.text(`Jami ball: _______ / ${totalMax.toFixed(1)}`, x+M+2, botY+5);
-  pdf.text(`Foiz: _______%`, x+M+2, botY+10);
+  pdf.text(`Jami ball: _________ / ${totalMax.toFixed(1)}`, x+M+2, botY+7);
+  pdf.text(`Foiz: _________%`, x+M+2, botY+14);
 
-  // ID box (top-right corner — like a mini QR placeholder)
-  const idBoxX = x + w - M - 28;
-  const idBoxY = botY + 1;
-  const idBoxW = 26;
-  const idBoxH = 11;
-  pdf.setFillColor(240,240,240);
-  pdf.rect(idBoxX, idBoxY, idBoxW, idBoxH, 'F');
-  pdf.setDrawColor(0,0,0);
-  pdf.rect(idBoxX, idBoxY, idBoxW, idBoxH, 'S');
+  // Right: large QR-style ID marker (30x18mm)
+  const qrX = x + w - M - 34;
+  const qrY = botY + 1;
+  const qrW = 32;
+  const qrH = 17;
 
-  // Draw mini QR-like pattern (3x3 dots = ID visual marker)
-  pdf.setFillColor(0,0,0);
-  const dotGrid = [[0,0],[2,0],[0,2],[1,1],[2,2],[0,1]]; // simplified pattern
-  dotGrid.forEach(([dx,dy]) => {
-    pdf.rect(idBoxX+1+dx*2, idBoxY+1+dy*2, 1.5, 1.5, 'F');
-  });
+  // QR border
   pdf.setFillColor(255,255,255);
-  pdf.rect(idBoxX+3, idBoxY+3, 1.5, 1.5, 'F'); // center white
+  pdf.rect(qrX, qrY, qrW, qrH, 'F');
+  pdf.setDrawColor(0,0,0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(qrX, qrY, qrW, qrH, 'S');
 
-  // ID text
-  pdf.setFontSize(5);
-  pdf.setTextColor(60,60,60);
-  pdf.text(`ID: ${stu.id}`, idBoxX + idBoxW/2, idBoxY + idBoxH - 1.5, {align:'center'});
+  // QR finder pattern (top-left 7x7)
+  const drawFinder = (fx, fy, sz) => {
+    pdf.setFillColor(0,0,0); pdf.rect(fx,fy,sz,sz,'F');
+    pdf.setFillColor(255,255,255); pdf.rect(fx+sz*1/7,fy+sz*1/7,sz*5/7,sz*5/7,'F');
+    pdf.setFillColor(0,0,0); pdf.rect(fx+sz*2/7,fy+sz*2/7,sz*3/7,sz*3/7,'F');
+  };
+  const fp = 5; // finder size mm
+  drawFinder(qrX+1, qrY+1, fp);        // top-left
+  drawFinder(qrX+qrW-fp-1, qrY+1, fp); // top-right
+  drawFinder(qrX+1, qrY+qrH-fp-1, fp); // bottom-left
+
+  // ID data dots (pseudo-random from ID string)
+  pdf.setFillColor(0,0,0);
+  const idStr = stu.id || 'XXXX';
+  for (let di = 0; di < idStr.length * 2; di++) {
+    const code = idStr.charCodeAt(di % idStr.length) + di * 17;
+    const dx = qrX + fp + 3 + (code % 14);
+    const dy = qrY + 1 + ((code * 3) % (qrH - 2));
+    if (dx < qrX + qrW - 2 && dy > qrY + 1 && dy < qrY + qrH - 2) {
+      pdf.rect(dx, dy, 1.2, 1.2, 'F');
+    }
+  }
+
+  // ID text below QR
+  pdf.setFontSize(6);
+  pdf.setFont('helvetica','bold');
+  pdf.setTextColor(0,0,0);
+  pdf.text(stu.id, qrX + qrW/2, qrY + qrH + 3, {align:'center'});
 }
 
 // ══════════════════════════════════════════════════════
