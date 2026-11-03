@@ -142,7 +142,8 @@ tr:hover td{background:#fafbff}
   <h1>TestHub</h1>
   <div class="ntabs">
     <button class="nt on" onclick="goTo('classes',this)">🏫 Sinflar</button>
-    <button class="nt" onclick="goTo('test',this)">⚙️ Test</button>
+    <button class="nt" onclick="goTo('tests',this)">📋 Testlar</button>
+    <button class="nt" onclick="goTo('test',this)">⚙️ Yangi test</button>
     <button class="nt" onclick="goTo('scanner',this)">📷 Skaner</button>
     <button class="nt" onclick="goTo('results',this)">📊 Natijalar</button>
   </div>
@@ -178,6 +179,21 @@ tr:hover td{background:#fafbff}
     <!-- Tests list -->
     <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:7px">TESTLAR:</div>
     <div id="testList"></div>
+  </div>
+</div>
+
+<!-- ═══ TESTS LIST ═══ -->
+<div class="page" id="page-tests">
+  <div class="card">
+    <div class="ct">📋 Testlar
+      <div style="margin-left:auto;display:flex;gap:7px;align-items:center">
+        <select id="flCls" onchange="renderTestsPage()" style="width:auto;font-size:12px;padding:5px 9px">
+          <option value="">Barcha sinflar</option>
+        </select>
+        <button class="btn bp bs" onclick="startNewTest()">+ Yangi test</button>
+      </div>
+    </div>
+    <div id="testsPageList"><p style="color:var(--m);font-size:13px">Sinf tanlang yoki barcha testlarni ko'ring</p></div>
   </div>
 </div>
 
@@ -381,6 +397,10 @@ window.addEventListener('db-ready', async () => {
     renderClsGrid();
     fillClsSelects();
     if (S.curCls && S.classes[S.curCls]) renderClsDetail(S.curCls);
+    // refresh tests page if open
+    if (document.getElementById('page-tests')?.classList.contains('on')) {
+      fillTestsPageFilter(); renderTestsPage();
+    }
   });
   initBlocks();
   updateBlockSummary();
@@ -399,6 +419,7 @@ function goTo(id, btn) {
   });
   if (id==='scanner') { fillScSelects(); }
   if (id==='results') { fillResSelects(); renderRes(); }
+  if (id==='tests') { fillTestsPageFilter(); renderTestsPage(); }
 }
 
 // ════════════════════════════════════════════════
@@ -500,7 +521,117 @@ async function delStu(cid, sid) {
 }
 
 // ════════════════════════════════════════════════
+// TESTS PAGE — all tests across classes, with inline answers + scan
+// ════════════════════════════════════════════════
+function fillTestsPageFilter() {
+  const el=document.getElementById('flCls');
+  const cur=el.value;
+  el.innerHTML='<option value="">Barcha sinflar</option>';
+  Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
+  if(cur) el.value=cur;
+}
+
+function renderTestsPage() {
+  const filterCls=document.getElementById('flCls').value;
+  const container=document.getElementById('testsPageList');
+  let html='';
+  const clsEntries = filterCls
+    ? [[filterCls, S.classes[filterCls]]]
+    : Object.entries(S.classes||{});
+
+  let total=0;
+  clsEntries.forEach(([cid,cls])=>{
+    if(!cls) return;
+    const tests=Object.entries(cls.tests||{});
+    if(!tests.length) return;
+    html+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:6px;padding:4px 0;border-bottom:1px solid var(--bd)">
+        🏫 ${cls.name} &nbsp;·&nbsp; 👥 ${Object.keys(cls.students||{}).length} o'quvchi
+      </div>`;
+    tests.forEach(([tid,t])=>{
+      const resCount=Object.keys(t.results||{}).length;
+      const stuCount=Object.keys(cls.students||{}).length;
+      const pct=stuCount?Math.round(resCount/stuCount*100):0;
+      html+=`<div class="tcard" id="tc_${tid}">
+        <div style="flex:1;min-width:0">
+          <div class="tcard-name">${t.name||t.subject}</div>
+          <div class="tcard-info">📚 ${t.subject} &nbsp;·&nbsp; ${cls.name} &nbsp;·&nbsp; 📅 ${fmtD(t.date)} &nbsp;·&nbsp; ${t.count} savol</div>
+          <div class="tcard-info">
+            <span class="badge ${pct===100?'bgs':pct>50?'bgy':'bgr'}">${resCount}/${stuCount} tekshirildi</span>
+          </div>
+        </div>
+        <div class="tcard-btns">
+          <button class="btn bp bx" onclick="openTestDetail('${cid}','${tid}')">✏️ Javob+Skaner</button>
+          <button class="btn bo bx" onclick="printOMRTest('${cid}','${tid}')">📄 PDF</button>
+        </div>
+      </div>
+      <!-- Inline expand panel -->
+      <div id="td_${tid}" style="display:none;margin-bottom:8px;background:#f8faff;border-radius:10px;border:1.5px solid var(--p);padding:14px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <strong style="font-size:13px">${t.name} — To'g'ri javoblar</strong>
+          <button class="btn bg bs" onclick="saveInlineAns('${cid}','${tid}')">✓ Saqlash</button>
+          <button class="btn bp bs" onclick="goToScanWithTest('${cid}','${tid}')">📷 Skanerga o'tish</button>
+          <button class="btn bo bx" style="margin-left:auto" onclick="closeTestDetail('${tid}')">✕</button>
+        </div>
+        <p style="font-size:11px;color:var(--m);margin-bottom:8px">Har savol uchun to'g'ri javobni kiriting (A/B/C/D):</p>
+        <div class="ag" id="ia_${tid}"></div>
+      </div>`;
+      total++;
+    });
+    html+='</div>';
+  });
+
+  if(!total) html='<p style="color:var(--m);font-size:13px">Hali test yo\'q — "Yangi test" tugmasini bosing</p>';
+  container.innerHTML=html;
+}
+
+function openTestDetail(cid, tid) {
+  // close any open
+  document.querySelectorAll('[id^="td_"]').forEach(el=>el.style.display='none');
+  const panel=document.getElementById('td_'+tid);
+  if(!panel) return;
+  panel.style.display='block';
+  // fill answers grid
+  const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
+  const n=t.count||15;
+  const g=document.getElementById('ia_'+tid); g.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const d=document.createElement('div'); d.className='ac';
+    d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ia${tid}_${i}" value="${t.correctAnswers?.[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
+    g.appendChild(d);
+  }
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  // store context
+  S.mdAnsClsId=cid; S.mdAnsTestId=tid;
+}
+
+function closeTestDetail(tid) {
+  const panel=document.getElementById('td_'+tid);
+  if(panel) panel.style.display='none';
+}
+
+async function saveInlineAns(cid, tid) {
+  const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
+  const n=t.count||15, ca={};
+  for(let i=1;i<=n;i++){
+    const el=document.getElementById(`ia${tid}_${i}`);
+    if(el?.value) ca[i]=el.value.trim().toUpperCase();
+  }
+  t.correctAnswers=ca;
+  await window.DB.write(`classes/${cid}/tests/${tid}/correctAnswers`,ca);
+  syncAnim(); toast('✓ Javoblar saqlandi');
+}
+
+function goToScanWithTest(cid, tid) {
+  S.curCls=cid; S.curTest=tid;
+  fillScSelects(cid, tid);
+  goTo('scanner');
+  document.querySelectorAll('.nt').forEach(t=>{ if(t.getAttribute('onclick')?.includes("'scanner'")) t.classList.add('on'); });
+}
+
+// ════════════════════════════════════════════════
 // TEST SETUP — blocks auto-expand
+// ════════════════════════════════════════════════
 // ════════════════════════════════════════════════
 function initBlocks() {
   document.getElementById('blockList').innerHTML='';
@@ -710,12 +841,13 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   const n=cfg.count, OPTS=['A','B','C','D'];
   const totalMax=getTotalMax(n,cfg.blocks);
   const M=6; // corner marker size mm
+  const idStr = stu.id || 'XXXX';
 
   // White background + border
   pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
   pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5); pdf.rect(x,y,w,h,'S');
 
-  // ── Corner alignment markers ──
+  // ── 4 Corner alignment markers (solid square with hollow ring) ──
   [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]].forEach(([cx,cy])=>{
     pdf.setFillColor(0,0,0); pdf.rect(cx,cy,M,M,'F');
     pdf.setFillColor(255,255,255); pdf.rect(cx+1,cy+1,M-2,M-2,'F');
@@ -723,42 +855,45 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   });
 
   // ── Header ──
-  let hy = y + M + 4;
+  let hy = y + M + 3;
   const hx = x + M + 2;
   const hw = w - M*2 - 4;
 
-  // ISM FAMILYA row — big line
-  pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  // ISM FAMILYA — avtomatik yoziladi (o'quvchi nomi)
+  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(80,80,80);
   pdf.text('ISM FAMILYA:', hx, hy+3);
-  pdf.setLineWidth(0.5); pdf.setDrawColor(0,0,0);
-  pdf.line(hx+36, hy+3.5, hx+hw-2, hy+3.5);
+  // Name printed in large bold text
+  pdf.setFontSize(11); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  const nameText = stu.name || '—';
+  pdf.text(nameText, hx+38, hy+3);
+  // underline
+  pdf.setLineWidth(0.4); pdf.setDrawColor(0,0,0);
+  pdf.line(hx+36, hy+4, hx+hw-2, hy+4);
   hy += 9;
 
   // Info row
-  pdf.setFontSize(8); pdf.setFont('helvetica','normal');
+  pdf.setFontSize(8); pdf.setFont('helvetica','normal'); pdf.setTextColor(0,0,0);
   pdf.text(`FAN: ${cfg.subject}`, hx, hy+3);
-  pdf.text(`SINF: ${cls.name}`, hx+hw*0.4, hy+3);
-  pdf.text(`TUR: ${cfg.name}`, hx, hy+9);
-  pdf.text(`SANA: ${fmtD(cfg.date)}`, hx+hw*0.4, hy+9);
-  hy += 14;
+  pdf.text(`SINF: ${cls.name}`, hx+hw*0.38, hy+3);
+  pdf.text(`TUR: ${cfg.name}`, hx, hy+8.5);
+  pdf.text(`SANA: ${fmtD(cfg.date)}`, hx+hw*0.38, hy+8.5);
+  hy += 13;
 
-  // Separator
-  pdf.setFillColor(0,0,0); pdf.rect(hx, hy, hw, 1.5, 'F'); hy += 4;
+  // Thick separator
+  pdf.setFillColor(0,0,0); pdf.rect(hx, hy, hw, 1.2, 'F'); hy += 4;
 
-  // ── OMR grid filling remaining space ──
-  const bottomBarH = 20;
+  // ── OMR grid ──
+  const bottomBarH = 22;
   const availH = (y + h) - bottomBarH - hy - 2;
-
-  // Choose columns: 2 for <=20, 3 for more
   const nCols = n <= 20 ? 2 : 3;
   const rowsPerCol = Math.ceil(n / nCols);
-  const rowH = Math.max(7.5, Math.min(14, availH / (rowsPerCol + 1)));
-  const bR = Math.min(4.8, (rowH - 2.5) / 2); // bubble radius — bigger
+  const rowH = Math.max(7.5, Math.min(13.5, availH / (rowsPerCol + 1)));
+  const bR = Math.min(4.8, (rowH - 2.5) / 2);
   const bStep = bR * 2 + 2.5;
   const colW = hw / nCols;
   const numW = 11;
 
-  // Column headers
+  // Column headers A B C D
   pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(30,30,30);
   for(let c=0;c<nCols;c++){
     const cx = hx + c*colW;
@@ -772,29 +907,21 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   }
   hy += 6;
 
-  // Rows
+  // Question rows
   for(let i=1;i<=n;i++){
     const col = Math.floor((i-1)/rowsPerCol);
     const row = (i-1) % rowsPerCol;
     const cx = hx + col*colW;
     const qy = hy + row*rowH + rowH*0.5;
-
-    // Alternating row bg
     if(row%2===0){
       pdf.setFillColor(245,248,255);
       pdf.rect(cx, qy-rowH*0.5+0.5, colW-2, rowH-1, 'F');
     }
-
-    // Question number
     pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
     pdf.text(String(i), cx+numW-1, qy+2.5, {align:'right'});
-
-    // Ball label
     const sc = getScore(i, cfg.blocks);
     pdf.setFontSize(5.5); pdf.setTextColor(140,140,140);
     pdf.text(`${sc}b`, cx+numW+1, qy-1.5);
-
-    // Bubbles — big and clear
     OPTS.forEach((_,oi)=>{
       const bx = cx + numW + oi*bStep + bR;
       pdf.setFillColor(255,255,255);
@@ -809,33 +936,51 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.8);
   pdf.line(x+M, botY, x+w-M, botY);
 
-  // Left: ball info
+  // Left: ball / foiz
   pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
   pdf.text(`Jami ball: ___________ / ${totalMax.toFixed(1)}`, hx, botY+7);
-  pdf.text(`Foiz: ___________ %`, hx, botY+14);
+  pdf.text(`Foiz: ___________ %`, hx, botY+15);
 
-  // Right: Student ID box — big, scannable
-  const idBoxW = 42;
-  const idBoxH = bottomBarH - 4;
-  const ibx = x + w - M - idBoxW - 1;
-  const iby = botY + 2;
+  // ── ID zone (right side of bottom) — encoded dot matrix ──
+  const idZoneW = 50;
+  const idZoneH = bottomBarH - 3;
+  const izx = x + w - M - idZoneW - 1;
+  const izy = botY + 1;
 
-  pdf.setFillColor(255,255,255); pdf.rect(ibx, iby, idBoxW, idBoxH, 'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.8); pdf.rect(ibx, iby, idBoxW, idBoxH, 'S');
-
-  // Big ID text — sayt shu ID ni o'qiydi
-  const idStr = stu.id || 'XXXX';
-  pdf.setFontSize(16); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(idStr, ibx + idBoxW/2, iby + idBoxH*0.45, {align:'center'});
+  // Box
+  pdf.setFillColor(255,255,255); pdf.rect(izx, izy, idZoneW, idZoneH, 'F');
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7); pdf.rect(izx, izy, idZoneW, idZoneH, 'S');
 
   // Label
-  pdf.setFontSize(6.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,100,100);
-  pdf.text('O\'QUVCHI ID', ibx + idBoxW/2, iby + 3.5, {align:'center'});
+  pdf.setFontSize(6); pdf.setFont('helvetica','bold'); pdf.setTextColor(80,80,80);
+  pdf.text("O'QUVCHI ID", izx + idZoneW/2, izy + 3.5, {align:'center'});
 
-  // Student name small
-  pdf.setFontSize(6); pdf.setTextColor(60,60,60);
-  const nameShort = stu.name.length>18 ? stu.name.substring(0,16)+'...' : stu.name;
-  pdf.text(nameShort, ibx + idBoxW/2, iby + idBoxH - 2, {align:'center'});
+  // Big readable ID text — sayt bu matnni o'qiydi
+  pdf.setFontSize(15); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(idStr, izx + idZoneW/2, izy + idZoneH*0.52, {align:'center'});
+
+  // ── Encoded dot matrix from ID — skaner uchun ──
+  // Each character of ID is encoded as a row of 8 bits (dot = filled square)
+  const dotR = 1.1;    // dot radius mm
+  const dotGap = 2.6;  // gap between dots
+  const matCols = 8;   // bits per row
+  const matX = izx + 2;
+  const matBaseY = izy + idZoneH - 5; // bottom of ID zone
+
+  pdf.setFillColor(0,0,0);
+  for(let ci=0; ci<idStr.length && ci<5; ci++){
+    const charCode = idStr.charCodeAt(ci);
+    for(let bi=0; bi<matCols; bi++){
+      if(charCode & (1 << (matCols-1-bi))){
+        const dx = matX + bi*dotGap;
+        const dy = matBaseY - ci*dotGap;
+        pdf.rect(dx, dy, dotR*1.8, dotR*1.8, 'F');
+      }
+    }
+  }
+  // Row separator dots for alignment
+  pdf.setFontSize(5); pdf.setTextColor(160,160,160);
+  pdf.text('▪ encoded', izx+2, izy+idZoneH-1);
 }
 
 // ════════════════════════════════════════════════
