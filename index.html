@@ -784,23 +784,15 @@ function generateTitulPDF() {
   if (!students.length) { toast('O\'quvchilar yo\'q'); return; }
 
   const {jsPDF} = window.jspdf;
-  // 2 per A4 page (each card ~A5-ish landscape)
+  // 1 per A4 page — full size, big bubbles, easy to scan
   const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
-  const PW=210, PH=297;
-  const cardH = 140; // two per page
-  const cardW = PW - 16;
+  const margin = 6;
+  const cardW = 210 - margin*2;
+  const cardH = 297 - margin*2;
 
   students.forEach((stu, idx) => {
-    if (idx > 0 && idx % 2 === 0) pdf.addPage();
-    const cardY = (idx % 2) * (cardH + 6) + 8;
-    drawOMRCard(pdf, cfg, cls, stu, 8, cardY, cardW, cardH);
-    // Dashed cut line between cards
-    if (idx % 2 === 0 && idx < students.length - 1) {
-      pdf.setDrawColor(180,180,180);
-      pdf.setLineDash([3,3]);
-      pdf.line(8, cardY + cardH + 2, PW-8, cardY + cardH + 2);
-      pdf.setLineDash([]);
-    }
+    if (idx > 0) pdf.addPage();
+    drawOMRCard(pdf, cfg, cls, stu, margin, margin, cardW, cardH);
   });
 
   pdf.save(`titul-${cls.name}-${cfg.subject}.pdf`);
@@ -810,103 +802,148 @@ function generateTitulPDF() {
 function drawOMRCard(pdf, cfg, cls, stu, x, y, w, h) {
   const n = cfg.count;
   const totalMax = getTotalMax(n, cfg.blocks);
+  const OPTS = ['A','B','C','D'];
 
-  // ── OUTER BORDER + BG ──
-  pdf.setFillColor(250,252,255);
-  pdf.roundedRect(x, y, w, h, 5, 5, 'F');
-  pdf.setDrawColor(26,115,232);
-  pdf.setLineWidth(0.8);
-  pdf.roundedRect(x, y, w, h, 5, 5, 'S');
+  // ── WHITE BG + BORDER ──
+  pdf.setFillColor(255,255,255);
+  pdf.rect(x, y, w, h, 'F');
+  pdf.setDrawColor(0,0,0);
+  pdf.setLineWidth(0.4);
+  pdf.rect(x, y, w, h, 'S');
 
-  // ── CORNER ALIGNMENT MARKERS (for scanner detection) ──
-  const mSize = 5;
-  const corners = [
-    [x+2, y+2], [x+w-2-mSize, y+2],
-    [x+2, y+h-2-mSize], [x+w-2-mSize, y+h-2-mSize]
-  ];
+  // ── 4 CORNER BLACK SQUARES (alignment markers) ──
+  const M = 4; // marker size mm
+  const corners = [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]];
   corners.forEach(([cx,cy]) => {
     pdf.setFillColor(0,0,0);
-    pdf.rect(cx, cy, mSize, mSize, 'F');         // outer
-    pdf.setFillColor(255,255,255);
-    pdf.rect(cx+1.2, cy+1.2, mSize-2.4, mSize-2.4, 'F'); // inner white
-    pdf.setFillColor(0,0,0);
-    pdf.rect(cx+2, cy+2, mSize-4, mSize-4, 'F'); // center dot
+    pdf.rect(cx, cy, M, M, 'F');
   });
 
-  // ── HEADER BAR ──
-  pdf.setFillColor(26,115,232);
-  pdf.roundedRect(x+8, y+2, w-16, 14, 3, 3, 'F');
-  pdf.setTextColor(255,255,255);
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica','bold');
-  pdf.text(`${cfg.type} — ${cfg.subject} — ${cls.name}`, x+w/2, y+10, {align:'center'});
+  // ── HEADER INFO (NAME / EXAM / DATE lines) ──
+  let hy = y + M + 2;
+  pdf.setDrawColor(0,0,0);
+  pdf.setLineWidth(0.3);
   pdf.setFontSize(7);
-  pdf.text(`${cfg.year}  |  ${fmtDate(cfg.date)}`, x+w/2, y+14, {align:'center'});
+  pdf.setFont('helvetica','bold');
+  pdf.setTextColor(0,0,0);
 
-  // ── STUDENT INFO BOX ──
-  const iy = y + 18;
-  pdf.setFillColor(232,240,255);
-  pdf.rect(x+8, iy, w-16, 12, 'F');
-  pdf.setTextColor(30,30,30);
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica','bold');
-  pdf.text(stu.name, x+12, iy+5);
-  pdf.setFontSize(7);
-  pdf.setFont('helvetica','normal');
-  pdf.setTextColor(100,100,100);
-  pdf.text(`ID: ${stu.id}`, x+w-10, iy+5, {align:'right'});
-  pdf.text(`${cls.name} | ${cfg.subject} | O'qituvchi: ${cls.teacher||'—'}`, x+12, iy+10);
+  // NAME line
+  pdf.text('ISM FAMILYA :', x+M+1, hy+3);
+  pdf.line(x+M+28, hy+4, x+w-M-2, hy+4);
+
+  hy += 7;
+  // EXAM line
+  pdf.text('FAN :', x+M+1, hy+3);
+  pdf.text(cfg.subject, x+M+12, hy+3);
+  pdf.text('SINF :', x+w/2-10, hy+3);
+  pdf.text(cls.name, x+w/2+4, hy+3);
+
+  hy += 7;
+  // DATE / TYPE line
+  pdf.text('TUR :', x+M+1, hy+3);
+  pdf.text(cfg.type, x+M+11, hy+3);
+  pdf.text('SANA :', x+w/2-10, hy+3);
+  pdf.text(fmtDate(cfg.date), x+w/2+5, hy+3);
+
+  // ── SEPARATOR LINE ──
+  hy += 6;
+  pdf.setLineWidth(0.5);
+  pdf.line(x+M, hy, x+w-M, hy);
+  pdf.setLineWidth(0.3);
 
   // ── OMR BUBBLE GRID ──
-  const omrY = iy + 16;
-  const OPTS = ['A','B','C','D'];
-  const colW = (w-16) / Math.ceil(n/2);
+  // Layout: 3 columns of questions
+  const omrY = hy + 3;
+  const nCols = 3;
+  const rowsPerCol = Math.ceil(n / nCols);
+  const colW = (w - M*2 - 2) / nCols;
+  const rowH = 6.5; // mm per row
+  const bubbleR = 2.2; // radius mm
+  const numW = 7;  // space for question number
 
-  pdf.setFontSize(7);
+  pdf.setFontSize(6);
   pdf.setFont('helvetica','bold');
 
-  for (let i=1; i<=n; i++) {
-    const col = Math.floor((i-1) / (Math.ceil(n/2)));
-    const row = (i-1) % Math.ceil(n/2);
-    const qx = x + 8 + col * colW;
-    const qy = omrY + row * 9;
-
-    // Score label
-    const sc = getScore(i, cfg.blocks);
+  // Column headers: A B C D
+  for (let c = 0; c < nCols; c++) {
+    const cx = x + M + 1 + c * colW;
     pdf.setTextColor(80,80,80);
-    pdf.text(`${i}(${sc})`, qx, qy+4);
-
-    // Bubbles
     OPTS.forEach((opt, oi) => {
-      const bx = qx + 14 + oi*7;
-      const by = qy + 1;
-      pdf.setDrawColor(40,40,40);
-      pdf.setLineWidth(0.5);
-      pdf.setFillColor(255,255,255);
-      pdf.circle(bx+2.5, by+2.5, 2.5, 'FD');
-      pdf.setTextColor(40,40,40);
-      pdf.setFontSize(5.5);
-      pdf.text(opt, bx+2.5, by+3.5, {align:'center'});
-      pdf.setFontSize(7);
+      const bx = cx + numW + oi * (bubbleR*2 + 1.5) + bubbleR;
+      pdf.text(opt, bx, omrY + 3, {align:'center'});
     });
   }
 
-  // ── TOTAL BOX ──
-  const totY = y + h - 18;
-  pdf.setFillColor(26,115,232);
-  pdf.roundedRect(x+8, totY, w-16, 11, 3, 3, 'F');
-  pdf.setTextColor(255,255,255);
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica','bold');
-  pdf.text(`Jami: _______/${totalMax.toFixed(1)} ball  |  %: _______  |  Imzo: ___________`,
-    x+w/2, totY+7, {align:'center'});
+  for (let i = 1; i <= n; i++) {
+    const col = Math.floor((i-1) / rowsPerCol);
+    const row = (i-1) % rowsPerCol;
+    const cx = x + M + 1 + col * colW;
+    const qy = omrY + 5 + row * rowH;
 
-  // ── BOTTOM ID (for scanner) ──
+    // Row bg (alternating)
+    if (row % 2 === 0) {
+      pdf.setFillColor(248,248,248);
+      pdf.rect(cx, qy - 2.5, colW - 1, rowH - 0.5, 'F');
+    }
+
+    // Question number
+    pdf.setFontSize(6.5);
+    pdf.setFont('helvetica','bold');
+    pdf.setTextColor(0,0,0);
+    pdf.text(String(i), cx + numW - 2, qy + 2, {align:'right'});
+
+    // Score (small)
+    const sc = getScore(i, cfg.blocks);
+    pdf.setFontSize(4.5);
+    pdf.setTextColor(120,120,120);
+    pdf.text(`${sc}b`, cx + numW + 0.5, qy + 2);
+
+    // Bubbles
+    OPTS.forEach((opt, oi) => {
+      const bx = cx + numW + oi * (bubbleR*2 + 1.5) + bubbleR + 4;
+      const by = qy;
+      pdf.setFillColor(255,255,255);
+      pdf.setDrawColor(30,30,30);
+      pdf.setLineWidth(0.5);
+      pdf.circle(bx, by, bubbleR, 'FD');
+    });
+  }
+
+  // ── BOTTOM: TOTAL + ID + MINI QR-LIKE BOX ──
+  const botY = y + h - 14;
+  pdf.setLineWidth(0.4);
+  pdf.line(x+M, botY, x+w-M, botY);
+
+  // Total fields
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica','bold');
+  pdf.setTextColor(0,0,0);
+  pdf.text(`Jami ball: _______ / ${totalMax.toFixed(1)}`, x+M+2, botY+5);
+  pdf.text(`Foiz: _______%`, x+M+2, botY+10);
+
+  // ID box (top-right corner — like a mini QR placeholder)
+  const idBoxX = x + w - M - 28;
+  const idBoxY = botY + 1;
+  const idBoxW = 26;
+  const idBoxH = 11;
   pdf.setFillColor(240,240,240);
-  pdf.rect(x+8, y+h-6, w-16, 5, 'F');
-  pdf.setTextColor(100,100,100);
-  pdf.setFontSize(6);
-  pdf.text(`TestHub | ${stu.id} | ${cfg.subject}`, x+w/2, y+h-3, {align:'center'});
+  pdf.rect(idBoxX, idBoxY, idBoxW, idBoxH, 'F');
+  pdf.setDrawColor(0,0,0);
+  pdf.rect(idBoxX, idBoxY, idBoxW, idBoxH, 'S');
+
+  // Draw mini QR-like pattern (3x3 dots = ID visual marker)
+  pdf.setFillColor(0,0,0);
+  const dotGrid = [[0,0],[2,0],[0,2],[1,1],[2,2],[0,1]]; // simplified pattern
+  dotGrid.forEach(([dx,dy]) => {
+    pdf.rect(idBoxX+1+dx*2, idBoxY+1+dy*2, 1.5, 1.5, 'F');
+  });
+  pdf.setFillColor(255,255,255);
+  pdf.rect(idBoxX+3, idBoxY+3, 1.5, 1.5, 'F'); // center white
+
+  // ID text
+  pdf.setFontSize(5);
+  pdf.setTextColor(60,60,60);
+  pdf.text(`ID: ${stu.id}`, idBoxX + idBoxW/2, idBoxY + idBoxH - 1.5, {align:'center'});
 }
 
 // ══════════════════════════════════════════════════════
