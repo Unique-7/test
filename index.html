@@ -3,19 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>TestHub — O'quvchilar Test Platformasi</title>
-
-<!-- Firebase -->
+<title>TestHub</title>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-import { getDatabase, ref, set, get, onValue, push, update, remove }
+import { getDatabase, ref, set, get, onValue, push }
   from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
 
-// ─── FIREBASE CONFIG ────────────────────────────────────────────────────────
-// TODO: Replace with your own Firebase project config
-// 1. Go to https://console.firebase.google.com/
-// 2. Create project → Realtime Database → Start in test mode
-// 3. Project Settings → Your apps → Web → Copy config here
 const firebaseConfig = {
   apiKey: "AIzaSyBH0U7pcuduxvFMnvHByqW-zMbPSa1CN2M",
   authDomain: "testhub-571de.firebaseapp.com",
@@ -26,1379 +19,1006 @@ const firebaseConfig = {
   appId: "1:728212478966:web:41a2fe9488a4dd4fd6d5d7"
 };
 
-// ─── DEMO MODE (works without Firebase) ─────────────────────────────────────
-const DEMO_MODE = firebaseConfig.apiKey === "PASTE_YOUR_API_KEY";
+const DEMO = firebaseConfig.apiKey === "PASTE_YOUR_API_KEY";
 let db = null;
-if (!DEMO_MODE) {
-  const app = initializeApp(firebaseConfig);
-  db = getDatabase(app);
-}
+if (!DEMO) { const app = initializeApp(firebaseConfig); db = getDatabase(app); }
 
-// ─── LOCAL STORAGE FALLBACK ──────────────────────────────────────────────────
 const LS = {
-  get: k => { try { return JSON.parse(localStorage.getItem('testhub_'+k) || 'null'); } catch{ return null; }},
-  set: (k,v) => localStorage.setItem('testhub_'+k, JSON.stringify(v)),
+  get: k => { try { return JSON.parse(localStorage.getItem('th_'+k)||'null'); } catch{return null;} },
+  set: (k,v) => localStorage.setItem('th_'+k, JSON.stringify(v)),
 };
-
-// ─── DB WRAPPER (Firebase or localStorage) ──────────────────────────────────
-const DB = {
-  async read(path) {
-    if (db) {
-      const snap = await get(ref(db, path));
-      return snap.exists() ? snap.val() : null;
-    }
-    return LS.get(path);
-  },
-  async write(path, val) {
-    if (db) await set(ref(db, val === null ? path : path), val);
-    else LS.set(path, val);
-  },
-  async push(path, val) {
-    if (db) {
-      const r = push(ref(db, path), val);
-      return r.key;
-    }
-    const data = LS.get(path) || {};
-    const key = 'k' + Date.now();
-    data[key] = val;
-    LS.set(path, data);
-    return key;
-  },
-  listen(path, cb) {
-    if (db) {
-      onValue(ref(db, path), snap => cb(snap.exists() ? snap.val() : null));
-    } else {
-      cb(LS.get(path));
-    }
-  }
+window.DB = {
+  async read(p){ if(db){const s=await get(ref(db,p));return s.exists()?s.val():null;} return LS.get(p); },
+  async write(p,v){ if(db) await set(ref(db,p),v); else LS.set(p,v); },
+  async push(p,v){ if(db){const r=push(ref(db,p),v);return r.key;} const d=LS.get(p)||{};const k='k'+Date.now();d[k]=v;LS.set(p,d);return k; },
+  listen(p,cb){ if(db) onValue(ref(db,p),s=>cb(s.exists()?s.val():null)); else cb(LS.get(p)); }
 };
-
-window.DB = DB;
-window.DEMO_MODE = DEMO_MODE;
+window.DEMO = DEMO;
 window.dispatchEvent(new Event('db-ready'));
 </script>
-
-<!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- XLSX -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- jsQR for QR-like anchor detection -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
 <style>
-:root {
-  --p:#1a73e8; --pd:#1557b0; --ps:#e8f0fe;
-  --g:#34a853; --r:#ea4335; --y:#fbbc04;
-  --bg:#f0f4ff; --card:#fff; --txt:#202124; --m:#5f6368;
-  --bd:#dadce0; --rad:14px; --sh:0 2px 16px rgba(0,0,0,.09);
-}
+:root{--p:#1a73e8;--pd:#1557b0;--ps:#e8f0fe;--g:#34a853;--r:#ea4335;--y:#fbbc04;
+  --bg:#f0f4ff;--card:#fff;--txt:#202124;--m:#5f6368;--bd:#dadce0;--rad:12px;--sh:0 2px 14px rgba(0,0,0,.08)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
-
-/* ── NAV ── */
-nav{background:var(--p);color:#fff;height:52px;display:flex;align-items:center;
-  padding:0 16px;gap:8px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-nav h1{font-size:16px;font-weight:700;flex:1}
-.nav-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-.nav-tabs::-webkit-scrollbar{display:none}
-.ntab{background:transparent;color:rgba(255,255,255,.75);border:none;
-  padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;
-  white-space:nowrap;transition:.2s}
-.ntab:hover,.ntab.on{background:rgba(255,255,255,.2);color:#fff}
-.demo-badge{background:#fbbc04;color:#000;font-size:10px;font-weight:700;
-  padding:2px 8px;border-radius:20px;margin-left:8px}
-
-/* ── PAGE ── */
-.page{display:none;padding:20px 16px;max-width:860px;margin:0 auto}
+nav{background:var(--p);color:#fff;height:50px;display:flex;align-items:center;padding:0 14px;gap:6px;
+  position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+nav h1{font-size:15px;font-weight:700;flex:1}
+.ntabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.ntabs::-webkit-scrollbar{display:none}
+.nt{background:transparent;color:rgba(255,255,255,.75);border:none;padding:6px 11px;border-radius:7px;
+  cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;transition:.2s}
+.nt:hover,.nt.on{background:rgba(255,255,255,.2);color:#fff}
+.page{display:none;padding:18px 14px;max-width:860px;margin:0 auto}
 .page.on{display:block}
-
-/* ── CARD ── */
-.card{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);
-  padding:18px;margin-bottom:14px}
-.card-title{font-size:15px;font-weight:700;margin-bottom:14px;
-  display:flex;align-items:center;gap:8px}
-
-/* ── INPUTS ── */
-lbl,label{display:block;font-size:12px;font-weight:600;color:var(--m);
-  margin-bottom:5px;margin-top:12px}
+.card{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);padding:16px;margin-bottom:12px}
+.ct{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+label{display:block;font-size:12px;font-weight:600;color:var(--m);margin-bottom:4px;margin-top:11px}
 label:first-of-type{margin-top:0}
-input,select,textarea{width:100%;padding:9px 13px;border:1.5px solid var(--bd);
-  border-radius:9px;font-size:14px;outline:none;transition:border-color .2s;background:#fff}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bd);border-radius:8px;
+  font-size:14px;outline:none;transition:border-color .2s;background:#fff;color:var(--txt)}
 input:focus,select:focus,textarea:focus{border-color:var(--p)}
 textarea{resize:vertical;min-height:70px}
-
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
-  border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
-.btn-p{background:var(--p);color:#fff} .btn-p:hover{background:var(--pd)}
-.btn-g{background:var(--g);color:#fff}
-.btn-r{background:var(--r);color:#fff}
-.btn-o{background:transparent;border:1.5px solid var(--bd);color:var(--txt)}
-.btn-o:hover{background:var(--bg)}
-.btn-sm{padding:6px 13px;font-size:12px}
-.btn-xs{padding:4px 10px;font-size:11px}
-
-/* ── TABLE ── */
-.tbl-wrap{overflow-x:auto;border-radius:9px;border:1px solid var(--bd)}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#f1f3f4;font-weight:700;color:var(--m);padding:9px 10px;
-  text-align:left;white-space:nowrap}
-td{padding:8px 10px;border-top:1px solid var(--bd);vertical-align:middle}
-tr:hover td{background:#fafbff}
-
-/* ── GRID ── */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:580px){.g2,.g3{grid-template-columns:1fr}}
-
-/* ── STAT ── */
-.stat{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);
-  padding:14px;text-align:center}
-.stat-n{font-size:28px;font-weight:800;color:var(--p)}
-.stat-l{font-size:11px;color:var(--m);margin-top:3px}
-
-/* ── CLASS CARD ── */
-.cls-card{background:var(--ps);border-radius:var(--rad);padding:14px 16px;
-  cursor:pointer;border:2px solid transparent;transition:.2s}
-.cls-card:hover{border-color:var(--p)}
-.cls-card.sel{border-color:var(--p);background:#fff}
-.cls-card h3{font-size:14px;font-weight:700;color:var(--p)}
-.cls-card p{font-size:12px;color:var(--m);margin-top:3px}
-
-/* ── ANSWER GRID ── */
-.ans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px;margin-top:8px}
-.ans-cell{display:flex;flex-direction:column;align-items:center;gap:3px}
-.ans-cell span{font-size:11px;color:var(--m);font-weight:700}
-.ans-cell input{width:56px;text-align:center;padding:7px 3px;
-  font-size:15px;font-weight:700;border-radius:8px}
-
-/* ── SCANNER ── */
-.scan-wrap{background:#000;border-radius:12px;overflow:hidden;
-  position:relative;min-height:260px;display:flex;align-items:center;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;border:none;
+  font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.bp{background:var(--p);color:#fff}.bp:hover{background:var(--pd)}
+.bg{background:var(--g);color:#fff}
+.br{background:var(--r);color:#fff}
+.bo{background:transparent;border:1.5px solid var(--bd);color:var(--txt)}.bo:hover{background:var(--bg)}
+.bs{padding:5px 12px;font-size:12px}
+.bx{padding:3px 9px;font-size:11px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+.stat{background:var(--card);border-radius:var(--rad);box-shadow:var(--sh);padding:12px;text-align:center}
+.sn{font-size:26px;font-weight:800;color:var(--p)}.sl{font-size:11px;color:var(--m);margin-top:2px}
+.cc{background:var(--ps);border-radius:var(--rad);padding:12px 14px;cursor:pointer;
+  border:2px solid transparent;transition:.2s}.cc:hover,.cc.sel{border-color:var(--p)}
+.cc h3{font-size:13px;font-weight:700;color:var(--p)}.cc p{font-size:11px;color:var(--m);margin-top:2px}
+.ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px;margin-top:8px}
+.ac{display:flex;flex-direction:column;align-items:center;gap:3px}
+.ac span{font-size:11px;color:var(--m);font-weight:700}
+.ac input{width:54px;text-align:center;padding:7px 2px;font-size:15px;font-weight:700;border-radius:7px}
+.scan-wrap{background:#000;border-radius:10px;overflow:hidden;position:relative;
+  min-height:240px;display:flex;align-items:center;justify-content:center}
 .scan-wrap video{width:100%;display:block}
-.scan-frame{position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);width:220px;height:160px;
-  border:3px solid #00ff88;border-radius:8px;
+.sf{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:220px;height:160px;border:3px solid #00ff88;border-radius:6px;
   box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
-.scan-line{position:absolute;top:0;left:0;right:0;height:2px;
+.sl2{position:absolute;top:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,#00ff88,transparent);
-  animation:scanY 1.8s linear infinite}
-@keyframes scanY{0%{top:0}100%{top:100%}}
-
-/* ── OMR GRID (titul varoq) ── */
-.omr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
-.omr-row{display:contents}
-.omr-q{font-size:8px;font-weight:700;color:#333;text-align:center;padding:1px}
-.omr-bubble{width:12px;height:12px;border-radius:50%;
-  border:1.5px solid #333;display:inline-block;margin:1px}
-.omr-bubble.filled{background:#000}
-
-/* ── RESULT BUBBLES ── */
-.res-bubble{display:inline-flex;align-items:center;justify-content:center;
-  width:30px;height:30px;border-radius:50%;font-size:11px;font-weight:700;
-  color:#fff;cursor:help}
-.rb-ok{background:var(--g)}
-.rb-no{background:var(--r)}
-.rb-na{background:#ccc;color:#666}
-
-/* ── TOAST ── */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
-  background:#202124;color:#fff;padding:11px 22px;border-radius:24px;
-  font-size:13px;z-index:9999;transition:transform .3s;pointer-events:none;
-  max-width:90vw;text-align:center}
+  animation:sc 1.8s linear infinite}
+@keyframes sc{0%{top:0}100%{top:100%}}
+.rb{display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;font-size:10px;font-weight:700;color:#fff;cursor:help}
+.rg{background:var(--g)}.rr{background:var(--r)}.rn{background:#ccc;color:#666}
+.tw{overflow-x:auto;border-radius:8px;border:1px solid var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f1f3f4;font-weight:700;color:var(--m);padding:8px 10px;text-align:left;white-space:nowrap}
+td{padding:7px 10px;border-top:1px solid var(--bd);vertical-align:middle}
+tr:hover td{background:#fafbff}
+.sep{height:1px;background:var(--bd);margin:12px 0}
+.cg{color:#137333;font-weight:700}.cy{color:#b06000;font-weight:700}.cr{color:#a50e0e;font-weight:700}
+.prog{background:#e8eaed;border-radius:4px;height:8px;overflow:hidden;margin-top:5px}
+.pb{height:100%;border-radius:4px;transition:width .6s}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--ps);color:var(--p);
+  border-radius:20px;padding:3px 10px;font-size:12px;margin:2px}
+.chip button{background:none;border:none;cursor:pointer;color:var(--p);font-size:14px;line-height:1;padding:0}
+.mb{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.mb strong{color:var(--p)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:#202124;color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;
+  z-index:9999;transition:transform .3s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0)}
-
-/* ── MODAL ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
-  z-index:500;align-items:center;justify-content:center;padding:20px}
-.modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:var(--rad);padding:22px;
-  max-width:420px;width:100%;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:16px;font-weight:700;margin-bottom:14px}
-
-/* ── SEP ── */
-.sep{height:1px;background:var(--bd);margin:14px 0}
-
-/* ── COLORS ── */
-.c-g{color:#137333;font-weight:700} .c-y{color:#b06000;font-weight:700}
-.c-r{color:#a50e0e;font-weight:700}
-
-/* ── PROGRESS ── */
-.prog{background:#e8eaed;border-radius:4px;height:9px;overflow:hidden;margin-top:6px}
-.prog-b{height:100%;border-radius:4px;transition:width .6s}
-
-/* ── CHIP ── */
-.chip{display:inline-flex;align-items:center;gap:5px;background:var(--ps);
-  color:var(--p);border-radius:20px;padding:3px 11px;font-size:12px;margin:2px}
-.chip button{background:none;border:none;cursor:pointer;
-  color:var(--p);font-size:15px;line-height:1;padding:0}
-
-/* ── SYNC INDICATOR ── */
-.sync{position:fixed;top:60px;right:12px;background:var(--g);color:#fff;
-  font-size:11px;padding:4px 10px;border-radius:12px;opacity:0;transition:.4s;z-index:300}
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;
+  align-items:center;justify-content:center;padding:20px}
+.mbg.open{display:flex}
+.md{background:#fff;border-radius:var(--rad);padding:20px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto}
+.md h3{font-size:15px;font-weight:700;margin-bottom:12px}
+.sync{position:fixed;top:58px;right:10px;background:var(--g);color:#fff;font-size:11px;
+  padding:3px 9px;border-radius:10px;opacity:0;transition:.4s;z-index:300}
 .sync.show{opacity:1}
-
-/* ── CONFIG NOTE ── */
-.config-note{background:#fff3cd;border:1px solid #ffc107;border-radius:9px;
-  padding:14px;font-size:13px;margin-bottom:16px}
-.config-note strong{color:#856404}
+.note{background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:12px;font-size:12px;margin-bottom:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.bgs{background:#e6f4ea;color:#137333}.bgy{background:#fef7e0;color:#b06000}.bgr{background:#fce8e6;color:#a50e0e}
 </style>
 </head>
 <body>
-
-<!-- SYNC -->
-<div id="syncDot" class="sync">☁️ Saqlandi</div>
-
+<div id="sync" class="sync">☁️ Saqlandi</div>
 <nav>
-  <span style="font-size:20px">📝</span>
-  <h1>TestHub <span id="demoBadge" class="demo-badge" style="display:none">DEMO</span></h1>
-  <div class="nav-tabs">
-    <button class="ntab on"  onclick="nav('classes')">🏫 Sinflar</button>
-    <button class="ntab"     onclick="nav('test')">⚙️ Test</button>
-    <button class="ntab"     onclick="nav('scanner')">📷 Skaner</button>
-    <button class="ntab"     onclick="nav('results')">📊 Natijalar</button>
-    <button class="ntab"     onclick="nav('settings')">🔧 Sozlama</button>
+  <span style="font-size:18px">📝</span>
+  <h1>TestHub</h1>
+  <div class="ntabs">
+    <button class="nt on" onclick="goTo('classes',this)">🏫 Sinflar</button>
+    <button class="nt" onclick="goTo('test',this)">⚙️ Test</button>
+    <button class="nt" onclick="goTo('scanner',this)">📷 Skaner</button>
+    <button class="nt" onclick="goTo('results',this)">📊 Natijalar</button>
   </div>
 </nav>
 
-<!-- ═══════════════ CLASSES PAGE ═══════════════ -->
+<!-- ═══ CLASSES ═══ -->
 <div class="page on" id="page-classes">
-  <div id="firebaseNote" class="config-note" style="display:none">
-    <strong>⚠️ Demo rejimi:</strong> Ma'lumotlar faqat bu qurilmada saqlanadi.
-    Real-vaqt sinxronizatsiya uchun <a href="#" onclick="nav('settings')">Firebase sozlang</a>.
+  <div id="demoNote" class="note" style="display:none">
+    ⚠️ <strong>Demo rejim</strong> — ma'lumotlar faqat bu qurilmada.
+    Real-vaqt sync uchun Firebase ulang.
   </div>
-
   <div class="card">
-    <div class="card-title">🏫 Sinflar
-      <button class="btn btn-p btn-sm" style="margin-left:auto" onclick="openNewClass()">+ Yangi sinf</button>
+    <div class="ct">🏫 Sinflar
+      <button class="btn bp bs" style="margin-left:auto" onclick="openMd('mdCls')">+ Yangi sinf</button>
     </div>
-    <div id="classGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+    <div id="clsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px">
       <p style="color:var(--m);font-size:13px;grid-column:1/-1">Yuklanmoqda...</p>
     </div>
   </div>
-
-  <div class="card" id="classDetail" style="display:none">
-    <div class="card-title">
-      <span id="clsDetailName">—</span>
-      <button class="btn btn-o btn-xs" style="margin-left:auto" onclick="openAddStudents()">+ O'quvchi</button>
-      <button class="btn btn-p btn-sm" onclick="openNewTest()">▶ Yangi test</button>
+  <div class="card" id="clsDetail" style="display:none">
+    <div class="ct">
+      <span id="clsName">—</span>
+      <button class="btn bo bx" style="margin-left:auto" onclick="openMd('mdStu')">+ O'quvchi</button>
+      <button class="btn bp bs" onclick="startNewTest()">▶ Yangi test</button>
     </div>
-
-    <div style="margin-bottom:12px">
-      <div style="font-size:12px;font-weight:600;color:var(--m);margin-bottom:6px">O'quvchilar:</div>
-      <div id="studentChips"></div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:5px">O'QUVCHILAR:</div>
+      <div id="stuChips"></div>
     </div>
-
     <div class="sep"></div>
-    <div style="font-size:12px;font-weight:600;color:var(--m);margin-bottom:8px">Testlar tarixi:</div>
-    <div id="testHistory"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--m);margin-bottom:7px">TESTLAR:</div>
+    <div id="testList"></div>
   </div>
 </div>
 
-<!-- ═══════════════ TEST SETUP PAGE ═══════════════ -->
+<!-- ═══ TEST SETUP ═══ -->
 <div class="page" id="page-test">
   <div class="card">
-    <div class="card-title">⚙️ Test Sozlamalari</div>
-    <label>Fan</label>
-    <input id="tSubject" value="Kimyo">
-    <label>Sinf</label>
-    <select id="tClass"></select>
-    <label>Tur</label>
-    <input id="tType" value="CHSB">
-    <label>Sana</label>
-    <input id="tDate" type="date">
-    <div class="g2" style="margin-top:12px">
-      <div><label>Savollar soni</label><input id="tCount" type="number" value="15" min="1" max="60"></div>
-      <div><label>O'quv yili</label><input id="tYear" value="2025-2026"></div>
+    <div class="ct">⚙️ Test yaratish</div>
+    <label>Test nomi (masalan: 1-CHSB, 2-BSB, Nazorat-1)</label>
+    <input id="tName" placeholder="1-CHSB" value="1-CHSB">
+    <div class="g2">
+      <div>
+        <label>Fan</label>
+        <input id="tSubj" value="Kimyo">
+      </div>
+      <div>
+        <label>Sinf</label>
+        <select id="tCls"></select>
+      </div>
     </div>
+    <div class="g2">
+      <div>
+        <label>Sana</label>
+        <input id="tDate" type="date">
+      </div>
+      <div>
+        <label>O'quv yili</label>
+        <input id="tYear" value="2025-2026">
+      </div>
+    </div>
+    <label>Savollar soni</label>
+    <input id="tCount" type="number" value="15" min="1" max="60" oninput="renderCorrGrid()">
   </div>
 
   <div class="card">
-    <div class="card-title">🎯 Ball bloklari</div>
+    <div class="ct">🎯 Ball bloklari</div>
     <div id="blockList"></div>
-    <button class="btn btn-o btn-sm" onclick="addBlock()" style="margin-top:8px">+ Blok qo'shish</button>
+    <button class="btn bo bs" onclick="addBlock()" style="margin-top:7px">+ Blok qo'shish</button>
   </div>
 
   <div class="card">
-    <div class="card-title">✅ To'g'ri javoblar</div>
-    <p style="font-size:12px;color:var(--m);margin-bottom:10px">A, B, C, D yoki 1–4</p>
-    <div class="ans-grid" id="correctGrid"></div>
+    <div class="ct">✅ To'g'ri javoblar</div>
+    <p style="font-size:12px;color:var(--m);margin-bottom:9px">A, B, C, D</p>
+    <div class="ag" id="corrGrid"></div>
   </div>
 
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-    <button class="btn btn-g" onclick="saveTest()">✓ Testni saqlash</button>
-    <button class="btn btn-o" onclick="generateTitulPDF()">📄 Titul varoq (PDF)</button>
+  <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px">
+    <button class="btn bg" onclick="saveTest()">✓ Testni saqlash</button>
+    <button class="btn bo" onclick="printOMR()">📄 Titul varoq (PDF)</button>
   </div>
 </div>
 
-<!-- ═══════════════ SCANNER PAGE ═══════════════ -->
+<!-- ═══ SCANNER ═══ -->
 <div class="page" id="page-scanner">
   <div class="card">
-    <div class="card-title">📷 Test Tekshirish</div>
+    <div class="ct">📷 Test Tekshirish</div>
+    <div class="mb">
+      📌 Titul varoqni kameraga tutib tekshiring. Savol varaqasini skaner qilgach, tizim
+      <strong>o'quvchini avtomatik aniqlaydi</strong> va natijani ko'rsatadi.
+    </div>
 
-    <div class="g2" style="margin-bottom:12px">
+    <div class="g2" style="margin-bottom:10px">
       <div>
         <label>Sinf</label>
-        <select id="scanClass" onchange="loadScanTest()"></select>
+        <select id="scCls" onchange="scLoadTest()"></select>
       </div>
       <div>
         <label>Test</label>
-        <select id="scanTest"></select>
+        <select id="scTest" onchange="scLoadStudents()"></select>
       </div>
     </div>
 
-    <label>O'quvchi</label>
-    <select id="scanStudent">
-      <option value="">— Tanlang —</option>
+    <label>O'quvchi (avtomatik yoki qo'lda)</label>
+    <select id="scStu">
+      <option value="">— Avtomatik aniqlanadi —</option>
     </select>
 
     <div class="sep"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <button class="btn btn-p" onclick="startCam()">📷 Kamera</button>
-      <button class="btn btn-o" onclick="stopCam()">⏹ To'xtat</button>
-      <label class="btn btn-o" style="cursor:pointer">
-        🖼 Rasm <input type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn bp" onclick="startCam()">📷 Kamerani yoqish</button>
+      <button class="btn bo" onclick="stopCam()">⏹ To'xtat</button>
+      <label class="btn bo" style="cursor:pointer">
+        🖼 Rasm yuklash<input type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
       </label>
     </div>
 
-    <div id="scanBox" style="display:none;margin-bottom:12px">
+    <div id="scanBox" style="display:none;margin-bottom:10px">
       <div class="scan-wrap">
         <video id="camVid" playsinline autoplay muted></video>
-        <div class="scan-frame"><div class="scan-line"></div></div>
+        <div class="sf"><div class="sl2"></div></div>
       </div>
-      <canvas id="camCanvas" style="display:none"></canvas>
-      <p style="font-size:12px;color:var(--m);margin-top:8px;text-align:center">
-        📌 Titul varoqdagi nuqta belgilarini ramkaga to'g'rilang
-      </p>
+      <canvas id="camCvs" style="display:none"></canvas>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">✏️ Javoblar (qo'lda yoki skanerdan)</div>
-    <div class="ans-grid" id="manGrid"></div>
+    <div class="ct">✏️ Javoblar</div>
+    <p style="font-size:11px;color:var(--m);margin-bottom:8px">Skaner aniqlamasa qo'lda kiriting:</p>
+    <div class="ag" id="manGrid"></div>
     <div class="sep"></div>
-    <button class="btn btn-g" onclick="checkNow()">✓ Tekshirish</button>
+    <button class="btn bg" onclick="checkNow()">✓ Tekshirish</button>
   </div>
 
   <div class="card" id="resCard" style="display:none">
-    <div class="card-title">📊 Natija</div>
-    <div id="resContent"></div>
+    <div class="ct">📊 Natija</div>
+    <div id="resBody"></div>
     <div class="sep"></div>
-    <button class="btn btn-p" onclick="saveResult()">💾 Jadvalga saqlash</button>
+    <button class="btn bp" onclick="saveRes()">💾 Saqlash</button>
   </div>
 </div>
 
-<!-- ═══════════════ RESULTS PAGE ═══════════════ -->
+<!-- ═══ RESULTS ═══ -->
 <div class="page" id="page-results">
-  <div class="g3" style="margin-bottom:14px">
-    <div class="stat"><div class="stat-n" id="stTotal">0</div><div class="stat-l">O'quvchi</div></div>
-    <div class="stat"><div class="stat-n" id="stChecked">0</div><div class="stat-l">Tekshirilgan</div></div>
-    <div class="stat"><div class="stat-n" id="stAvg">—</div><div class="stat-l">O'rtacha</div></div>
+  <div class="g3" style="margin-bottom:12px">
+    <div class="stat"><div class="sn" id="stT">0</div><div class="sl">O'quvchi</div></div>
+    <div class="stat"><div class="sn" id="stC">0</div><div class="sl">Tekshirilgan</div></div>
+    <div class="stat"><div class="sn" id="stA">—</div><div class="sl">O'rtacha</div></div>
   </div>
-
   <div class="card">
-    <div class="card-title">📊 Natijalar
-      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-        <select id="resCls" onchange="loadResTest()" style="width:auto;font-size:12px;padding:6px 10px">
+    <div class="ct">📊 Natijalar
+      <div style="margin-left:auto;display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <select id="rCls" onchange="rLoadTest()" style="width:auto;font-size:12px;padding:5px 9px">
           <option value="">Sinf</option>
         </select>
-        <select id="resTest" onchange="renderResults()" style="width:auto;font-size:12px;padding:6px 10px">
+        <select id="rTest" onchange="renderRes()" style="width:auto;font-size:12px;padding:5px 9px">
           <option value="">Test</option>
         </select>
-        <button class="btn btn-g btn-sm" onclick="exportExcel()">📥 Excel</button>
-        <button class="btn btn-p btn-sm" onclick="exportPDF()">📄 PDF</button>
+        <button class="btn bg bs" onclick="exportExcel()">📥 Excel</button>
+        <button class="btn bp bs" onclick="exportPDF()">📄 PDF</button>
       </div>
     </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead id="rHead"></thead>
-        <tbody id="rBody"></tbody>
-      </table>
+    <div class="tw">
+      <table><thead id="rHead"></thead><tbody id="rBody"></tbody></table>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ SETTINGS PAGE ═══════════════ -->
-<div class="page" id="page-settings">
-  <div class="card">
-    <div class="card-title">🔧 Firebase Sozlama</div>
-    <div class="config-note">
-      <strong>Firebase nima?</strong> Google'ning bepul ma'lumotlar bazasi.
-      Telefon + noutbuk bir vaqtda ishlaganda natijalar real vaqtda ko'rinadi.<br><br>
-      <strong>Qanday ulash:</strong><br>
-      1. <a href="https://console.firebase.google.com/" target="_blank">firebase.google.com</a> → Yangi loyiha<br>
-      2. Realtime Database → Test rejimida boshlash<br>
-      3. Loyiha sozlamalari → Web ilovasi → Config nusxalash<br>
-      4. Quyidagi maydonlarni to'ldiring → Saqlash
-    </div>
-
-    <label>API Key</label><input id="fbApiKey" placeholder="AIzaSy...">
-    <label>Auth Domain</label><input id="fbAuth" placeholder="your-app.firebaseapp.com">
-    <label>Database URL</label><input id="fbDb" placeholder="https://your-app-default-rtdb.firebaseio.com">
-    <label>Project ID</label><input id="fbProject" placeholder="your-app-id">
-
-    <div class="sep"></div>
-    <button class="btn btn-p" onclick="saveFirebase()">✓ Saqlash va qayta yuklash</button>
-
-    <div class="sep"></div>
-    <div class="card-title" style="margin-top:4px">📤 GitHub Pages orqali deployment</div>
-    <div style="font-size:13px;color:var(--m);line-height:1.7">
-      Bu faylni GitHub Pages'ga joylashtirish uchun:<br>
-      1. <code style="background:var(--bg);padding:2px 6px;border-radius:4px">git init</code> → <code style="background:var(--bg);padding:2px 6px;border-radius:4px">git add .</code> → <code style="background:var(--bg);padding:2px 6px;border-radius:4px">git commit</code><br>
-      2. GitHub'da repo ochib push qiling<br>
-      3. Settings → Pages → main branch → Save<br>
-      4. URL: <code>https://USERNAME.github.io/REPO</code><br><br>
-      <strong>Barcha qurilmadan kirish uchun Firebase ham kerak!</strong>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════ MODALS ══════════ -->
-<div class="modal-bg" id="modalNewClass">
-  <div class="modal">
+<!-- MODALS -->
+<div class="mbg" id="mdCls">
+  <div class="md">
     <h3>🏫 Yangi Sinf</h3>
-    <label>Sinf nomi (masalan: 7-D)</label>
-    <input id="newClsName" placeholder="7-D, 9-A...">
-    <label>Fan o'qituvchisi</label>
-    <input id="newClsTeacher" placeholder="F.I.Sh">
+    <label>Sinf nomi</label><input id="mClsN" placeholder="7-D, 9-A...">
+    <label>O'qituvchi</label><input id="mClsT" placeholder="F.I.Sh">
     <div class="sep"></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-p" onclick="createClass()">✓ Yaratish</button>
-      <button class="btn btn-o" onclick="closeModal('modalNewClass')">Bekor</button>
+    <div style="display:flex;gap:9px">
+      <button class="btn bp" onclick="createCls()">✓ Yaratish</button>
+      <button class="btn bo" onclick="closeMd('mdCls')">Bekor</button>
     </div>
   </div>
 </div>
-
-<div class="modal-bg" id="modalAddStudents">
-  <div class="modal">
+<div class="mbg" id="mdStu">
+  <div class="md">
     <h3>👥 O'quvchilar qo'shish</h3>
-    <label>Ismlarni kiriting (vergul yoki yangi qator)</label>
-    <textarea id="newStudentInput" rows="6" placeholder="Omonov Aziz, Shermatov Bobur
-Karimova Dilnoza
-Toshmatov Jasur"></textarea>
+    <label>Ismlar (vergul yoki yangi qator)</label>
+    <textarea id="mStuIn" rows="6" placeholder="Omonov Aziz, Shermatov Bobur&#10;Karimova Dilnoza"></textarea>
     <div class="sep"></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-p" onclick="addStudents()">✓ Qo'shish</button>
-      <button class="btn btn-o" onclick="closeModal('modalAddStudents')">Bekor</button>
+    <div style="display:flex;gap:9px">
+      <button class="btn bp" onclick="addStudents()">✓ Qo'shish</button>
+      <button class="btn bo" onclick="closeMd('mdStu')">Bekor</button>
     </div>
   </div>
 </div>
-
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════════════
-let APP = {
-  classes: {},     // {id: {name, teacher, students:{}, tests:{}}}
-  curClass: null,
-  curTest: null,
-  pendingResult: null,
-  camStream: null,
-  scanInterval: null
-};
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+const S = { classes:{}, curCls:null, curTest:null, cam:null, scanTick:null, pendRes:null };
 
-// ══════════════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
 window.addEventListener('db-ready', async () => {
-  if (window.DEMO_MODE) {
-    document.getElementById('firebaseNote').style.display = 'block';
-    document.getElementById('demoBadge').style.display = 'inline-block';
-  }
+  if (window.DEMO) document.getElementById('demoNote').style.display='block';
   document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
-  await loadClasses();
+  window.DB.listen('classes', d => {
+    S.classes = d || {};
+    renderClsGrid();
+    fillClsSelects();
+    if (S.curCls && S.classes[S.curCls]) renderClsDetail(S.curCls);
+  });
   initBlocks();
-  populateSelects();
+  renderCorrGrid();
 });
 
-async function loadClasses() {
-  window.DB.listen('classes', data => {
-    APP.classes = data || {};
-    renderClassGrid();
-    populateSelects();
-    if (APP.curClass && APP.classes[APP.curClass]) renderClassDetail(APP.curClass);
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+function goTo(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  if (btn) btn.classList.add('on');
+  else document.querySelectorAll('.nt').forEach(t=>{
+    if(t.getAttribute('onclick')?.includes("'"+id+"'")) t.classList.add('on');
   });
+  if (id==='scanner') { fillScSelects(); renderManGrid(); }
+  if (id==='results') { fillResSelects(); renderRes(); }
 }
 
-// ══════════════════════════════════════════════════════
-//  NAV
-// ══════════════════════════════════════════════════════
-function nav(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
-  document.getElementById('page-' + id).classList.add('on');
-  event.currentTarget.classList.add('on');
-  if (id === 'scanner') { populateScanSelects(); }
-  if (id === 'results') { populateResSelects(); renderResults(); }
-}
-
-// ══════════════════════════════════════════════════════
-//  CLASSES
-// ══════════════════════════════════════════════════════
-function renderClassGrid() {
-  const el = document.getElementById('classGrid');
-  const keys = Object.keys(APP.classes || {});
+// ════════════════════════════════════════════════
+// CLASSES
+// ════════════════════════════════════════════════
+function renderClsGrid() {
+  const el = document.getElementById('clsGrid');
+  const keys = Object.keys(S.classes||{});
   if (!keys.length) {
-    el.innerHTML = '<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q. "Yangi sinf" tugmasini bosing.</p>';
+    el.innerHTML='<p style="color:var(--m);font-size:13px;grid-column:1/-1">Hali sinf yo\'q</p>';
     return;
   }
   el.innerHTML = keys.map(k => {
-    const c = APP.classes[k];
-    const sCount = Object.keys(c.students || {}).length;
-    const tCount = Object.keys(c.tests || {}).length;
-    return `<div class="cls-card ${APP.curClass===k?'sel':''}" onclick="selectClass('${k}')">
-      <h3>${c.name}</h3>
-      <p>👥 ${sCount} o'quvchi · 📋 ${tCount} test</p>
-      <p style="font-size:11px;margin-top:4px;color:var(--m)">${c.teacher||''}</p>
+    const c = S.classes[k];
+    const sc = Object.keys(c.students||{}).length;
+    const tc = Object.keys(c.tests||{}).length;
+    return `<div class="cc ${S.curCls===k?'sel':''}" onclick="selectCls('${k}')">
+      <h3>${c.name}</h3><p>👥 ${sc} · 📋 ${tc} test</p>
+      <p style="font-size:10px;margin-top:2px;color:var(--m)">${c.teacher||''}</p>
     </div>`;
   }).join('');
 }
 
-function selectClass(id) {
-  APP.curClass = id;
-  renderClassGrid();
-  renderClassDetail(id);
-  document.getElementById('classDetail').style.display = 'block';
-  document.getElementById('tClass').value = id;
+function selectCls(id) {
+  S.curCls = id;
+  renderClsGrid();
+  renderClsDetail(id);
+  document.getElementById('clsDetail').style.display='block';
+  fillClsSelects();
 }
 
-function renderClassDetail(id) {
-  const c = APP.classes[id];
-  if (!c) return;
-  document.getElementById('clsDetailName').textContent = c.name;
+function renderClsDetail(id) {
+  const c = S.classes[id]; if(!c) return;
+  document.getElementById('clsName').textContent = c.name;
+  const stus = Object.entries(c.students||{});
+  const chips = document.getElementById('stuChips');
+  chips.innerHTML = stus.length
+    ? stus.map(([sid,s])=>`<span class="chip">${s.name}<button onclick="delStu('${id}','${sid}')">×</button></span>`).join('')
+    : '<span style="font-size:12px;color:var(--m)">Hali o\'quvchi yo\'q</span>';
 
-  // students
-  const chips = document.getElementById('studentChips');
-  const studs = Object.entries(c.students || {});
-  if (!studs.length) {
-    chips.innerHTML = '<span style="font-size:12px;color:var(--m)">Hali o\'quvchi yo\'q</span>';
-  } else {
-    chips.innerHTML = studs.map(([sid,s]) =>
-      `<span class="chip">${s.name} <button onclick="removeStudent('${id}','${sid}')">×</button></span>`
-    ).join('');
-  }
-
-  // tests
-  const hist = document.getElementById('testHistory');
-  const tests = Object.entries(c.tests || {});
-  if (!tests.length) {
-    hist.innerHTML = '<p style="font-size:12px;color:var(--m)">Hali test yo\'q</p>';
-    return;
-  }
-  hist.innerHTML = `<div class="tbl-wrap"><table>
-    <tr><th>Fan</th><th>Sana</th><th>Tur</th><th>Savollar</th><th></th></tr>
-    ${tests.map(([tid,t]) => `<tr>
-      <td><strong>${t.subject}</strong></td>
-      <td>${fmtDate(t.date)}</td>
-      <td>${t.type}</td>
-      <td>${t.count}</td>
-      <td><button class="btn btn-o btn-xs" onclick="loadTest('${id}','${tid}')">Tanlash</button></td>
-    </tr>`).join('')}
+  const tests = Object.entries(c.tests||{});
+  const tl = document.getElementById('testList');
+  if (!tests.length) { tl.innerHTML='<p style="font-size:12px;color:var(--m)">Hali test yo\'q</p>'; return; }
+  tl.innerHTML = `<div class="tw"><table>
+    <tr><th>Nom</th><th>Fan</th><th>Sana</th><th>N</th><th>Natija</th><th></th></tr>
+    ${tests.map(([tid,t])=>{
+      const resCount = Object.keys(t.results||{}).length;
+      return `<tr>
+        <td><strong>${t.name||t.type}</strong></td>
+        <td>${t.subject}</td><td>${fmtD(t.date)}</td><td>${t.count}</td>
+        <td><span class="badge bgs">${resCount} ta</span></td>
+        <td><button class="btn bo bx" onclick="loadTest('${id}','${tid}')">Yuklash</button></td>
+      </tr>`;
+    }).join('')}
   </table></div>`;
 }
 
-function openNewClass() {
-  document.getElementById('newClsName').value = '';
-  document.getElementById('newClsTeacher').value = '';
-  openModal('modalNewClass');
-}
+function openMd(id) { document.getElementById(id).classList.add('open'); }
+function closeMd(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.mbg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
-async function createClass() {
-  const name = document.getElementById('newClsName').value.trim();
-  const teacher = document.getElementById('newClsTeacher').value.trim();
+async function createCls() {
+  const name = document.getElementById('mClsN').value.trim();
+  const teacher = document.getElementById('mClsT').value.trim();
   if (!name) { toast('Sinf nomini kiriting'); return; }
-  const key = await window.DB.push('classes', {name, teacher, students:{}, tests:{}});
-  closeModal('modalNewClass');
-  toast(`✓ ${name} sinfi yaratildi`);
-  syncAnim();
-}
-
-function openAddStudents() {
-  if (!APP.curClass) { toast('Avval sinf tanlang'); return; }
-  document.getElementById('newStudentInput').value = '';
-  openModal('modalAddStudents');
+  await window.DB.push('classes', {name, teacher, students:{}, tests:{}});
+  closeMd('mdCls');
+  syncAnim(); toast(`✓ ${name} yaratildi`);
 }
 
 async function addStudents() {
-  const raw = document.getElementById('newStudentInput').value;
+  if (!S.curCls) { toast('Sinf tanlang'); return; }
+  const raw = document.getElementById('mStuIn').value;
   const names = raw.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s.length>1);
-  if (!names.length) { toast('Ism kiriting'); return; }
-  const existing = APP.classes[APP.curClass]?.students || {};
-  const existingNames = Object.values(existing).map(s=>s.name.toLowerCase());
-  let added = 0;
+  const exist = Object.values(S.classes[S.curCls]?.students||{}).map(s=>s.name.toLowerCase());
+  let n=0;
   for (const name of names) {
-    if (existingNames.includes(name.toLowerCase())) continue;
-    // generate short ID
-    const id = 'S' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36)[2].toUpperCase();
-    await window.DB.write(`classes/${APP.curClass}/students/${id}`, {name, id});
-    added++;
+    if (exist.includes(name.toLowerCase())) continue;
+    const id = 'S'+Date.now().toString(36).toUpperCase().slice(-3)+Math.random().toString(36)[2].toUpperCase();
+    await window.DB.write(`classes/${S.curCls}/students/${id}`,{name,id});
+    n++;
   }
-  closeModal('modalAddStudents');
-  toast(`✓ ${added} nafar qo'shildi`);
-  syncAnim();
+  closeMd('mdStu'); syncAnim(); toast(`✓ ${n} nafar qo'shildi`);
 }
 
-async function removeStudent(clsId, stuId) {
+async function delStu(cid, sid) {
   if (!confirm('O\'chirish?')) return;
-  await window.DB.write(`classes/${clsId}/students/${stuId}`, null);
-  syncAnim();
+  await window.DB.write(`classes/${cid}/students/${sid}`, null); syncAnim();
 }
 
-// ══════════════════════════════════════════════════════
-//  TEST SETUP
-// ══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// TEST SETUP
+// ════════════════════════════════════════════════
 function initBlocks() {
-  document.getElementById('blockList').innerHTML = '';
-  addBlock(1, 5, 2);
-  addBlock(6, 15, 2.7);
-  renderCorrectGrid();
-  document.getElementById('tCount').oninput = () => renderCorrectGrid();
+  document.getElementById('blockList').innerHTML='';
+  addBlock(1,5,2); addBlock(6,15,2.7);
 }
 
-function addBlock(from=1, to=5, score=2) {
-  const d = document.createElement('div');
-  d.className = 'block-row';
-  d.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px';
-  d.innerHTML = `
-    <div><label style="margin-top:0">Boshlang'ich</label><input type="number" class="b-f" value="${from}" min="1"></div>
-    <div><label style="margin-top:0">Tugashi</label><input type="number" class="b-t" value="${to}" min="1"></div>
-    <div><label style="margin-top:0">Ball</label><input type="number" class="b-s" value="${score}" step="0.1" min="0"></div>
-    <div style="padding-bottom:0"><button class="btn btn-r btn-xs" onclick="this.closest('.block-row').remove()">✕</button></div>`;
+function addBlock(f=1,t=5,s=2) {
+  const d=document.createElement('div');
+  d.className='block-row';
+  d.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:end;margin-bottom:7px';
+  d.innerHTML=`
+    <div><label style="margin-top:0">Boshlanish</label><input type="number" class="bf" value="${f}" min="1"></div>
+    <div><label style="margin-top:0">Tugash</label><input type="number" class="bt" value="${t}" min="1"></div>
+    <div><label style="margin-top:0">Ball</label><input type="number" class="bs2" value="${s}" step="0.1" min="0"></div>
+    <div style="padding-bottom:0"><button class="btn br bx" onclick="this.closest('.block-row').remove()">✕</button></div>`;
   document.getElementById('blockList').appendChild(d);
 }
 
 function getBlocks() {
   return Array.from(document.querySelectorAll('.block-row')).map(r=>({
-    from: +r.querySelector('.b-f').value,
-    to: +r.querySelector('.b-t').value,
-    score: +r.querySelector('.b-s').value
+    from:+r.querySelector('.bf').value, to:+r.querySelector('.bt').value, score:+r.querySelector('.bs2').value
   }));
 }
 
 function getScore(q, blocks) {
-  for (const b of blocks) if (q >= b.from && q <= b.to) return b.score;
+  for(const b of blocks) if(q>=b.from&&q<=b.to) return b.score;
   return 1;
 }
+function getTotalMax(n, blocks) { let t=0; for(let i=1;i<=n;i++) t+=getScore(i,blocks); return t; }
 
-function getTotalMax(count, blocks) {
-  let t = 0;
-  for (let i=1;i<=count;i++) t += getScore(i, blocks);
-  return t;
-}
-
-function renderCorrectGrid() {
-  const n = +document.getElementById('tCount').value || 15;
-  const g = document.getElementById('correctGrid');
-  const prev = {};
-  g.querySelectorAll('input').forEach((inp,i) => { if(inp.value) prev[i+1] = inp.value; });
-  g.innerHTML = '';
-  for (let i=1; i<=n; i++) {
-    const d = document.createElement('div');
-    d.className = 'ans-cell';
-    d.innerHTML = `<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ca_${i}" value="${prev[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
+function renderCorrGrid() {
+  const n = +document.getElementById('tCount').value||15;
+  const g = document.getElementById('corrGrid');
+  const prev={};
+  g.querySelectorAll('input').forEach((inp,i)=>{if(inp.value)prev[i+1]=inp.value;});
+  g.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const d=document.createElement('div'); d.className='ac';
+    d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="ca_${i}" value="${prev[i]||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
     g.appendChild(d);
   }
 }
 
-function getCorrectAnswers() {
-  const n = +document.getElementById('tCount').value || 15;
-  const ca = {};
-  for (let i=1;i<=n;i++) {
-    const el = document.getElementById('ca_'+i);
-    if (el?.value) ca[i] = el.value.trim().toUpperCase();
-  }
+function getCorrAnswers() {
+  const n=+document.getElementById('tCount').value||15, ca={};
+  for(let i=1;i<=n;i++){const el=document.getElementById('ca_'+i);if(el?.value)ca[i]=el.value.trim().toUpperCase();}
   return ca;
 }
 
-function getTestConfig() {
+function getTestCfg() {
   return {
-    subject: document.getElementById('tSubject').value.trim() || 'Fan',
-    classId: document.getElementById('tClass').value,
-    type: document.getElementById('tType').value.trim() || 'Test',
+    name: document.getElementById('tName').value.trim()||'Test',
+    subject: document.getElementById('tSubj').value.trim()||'Fan',
+    classId: document.getElementById('tCls').value,
     date: document.getElementById('tDate').value,
     year: document.getElementById('tYear').value.trim(),
-    count: +document.getElementById('tCount').value || 15,
+    count: +document.getElementById('tCount').value||15,
     blocks: getBlocks(),
-    correctAnswers: getCorrectAnswers(),
+    correctAnswers: getCorrAnswers(),
     createdAt: Date.now()
   };
 }
 
-function openNewTest() {
-  if (APP.curClass) document.getElementById('tClass').value = APP.curClass;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('page-test').classList.add('on');
-  document.querySelectorAll('.ntab')[1].classList.add('on');
-  renderCorrectGrid();
-}
-
-async function saveTest() {
-  const cfg = getTestConfig();
-  if (!cfg.classId) { toast('Sinf tanlang'); return; }
-  const tid = await window.DB.push(`classes/${cfg.classId}/tests`, cfg);
-  APP.curTest = tid;
-  toast(`✓ Test saqlandi`);
-  syncAnim();
-  if (APP.curClass) renderClassDetail(APP.curClass);
+function startNewTest() {
+  if (S.curCls) document.getElementById('tCls').value = S.curCls;
+  goTo('test'); renderCorrGrid();
 }
 
 function loadTest(clsId, testId) {
-  APP.curClass = clsId;
-  APP.curTest = testId;
-  const t = APP.classes[clsId]?.tests?.[testId];
-  if (!t) return;
-  document.getElementById('tSubject').value = t.subject;
-  document.getElementById('tClass').value = clsId;
-  document.getElementById('tType').value = t.type;
-  document.getElementById('tDate').value = t.date;
-  document.getElementById('tYear').value = t.year;
-  document.getElementById('tCount').value = t.count;
-  // blocks
-  document.getElementById('blockList').innerHTML = '';
-  (t.blocks||[]).forEach(b => addBlock(b.from, b.to, b.score));
-  // answers
-  renderCorrectGrid();
-  setTimeout(() => {
-    Object.entries(t.correctAnswers||{}).forEach(([q,a]) => {
-      const el = document.getElementById('ca_'+q);
-      if (el) el.value = a;
-    });
-  }, 50);
-  toast(`✓ Test yuklandi: ${t.subject}`);
+  S.curCls=clsId; S.curTest=testId;
+  const t=S.classes[clsId]?.tests?.[testId]; if(!t) return;
+  document.getElementById('tName').value=t.name||t.type||'';
+  document.getElementById('tSubj').value=t.subject;
+  document.getElementById('tCls').value=clsId;
+  document.getElementById('tDate').value=t.date;
+  document.getElementById('tYear').value=t.year;
+  document.getElementById('tCount').value=t.count;
+  document.getElementById('blockList').innerHTML='';
+  (t.blocks||[]).forEach(b=>addBlock(b.from,b.to,b.score));
+  renderCorrGrid();
+  setTimeout(()=>{ Object.entries(t.correctAnswers||{}).forEach(([q,a])=>{ const el=document.getElementById('ca_'+q); if(el)el.value=a; }); },60);
+  goTo('test'); toast(`✓ "${t.name||t.subject}" yuklandi`);
 }
 
-// ══════════════════════════════════════════════════════
-//  TITUL VAROQ PDF  (OMR uslub, kichik, skanerga qulay)
-// ══════════════════════════════════════════════════════
-function generateTitulPDF() {
-  const cfg = getTestConfig();
-  if (!cfg.classId) { toast('Sinf tanlang'); return; }
-  const cls = APP.classes[cfg.classId];
-  if (!cls) { toast('Sinf topilmadi'); return; }
-  const students = Object.values(cls.students || {});
-  if (!students.length) { toast('O\'quvchilar yo\'q'); return; }
-
-  const {jsPDF} = window.jspdf;
-  // 1 per A4 page — full size, big bubbles, easy to scan
-  const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
-  const margin = 6;
-  const cardW = 210 - margin*2;
-  const cardH = 297 - margin*2;
-
-  students.forEach((stu, idx) => {
-    if (idx > 0) pdf.addPage();
-    drawOMRCard(pdf, cfg, cls, stu, margin, margin, cardW, cardH);
-  });
-
-  pdf.save(`titul-${cls.name}-${cfg.subject}.pdf`);
-  toast(`✓ ${students.length} ta titul varoq`);
+async function saveTest() {
+  const cfg=getTestCfg();
+  if(!cfg.classId){toast('Sinf tanlang');return;}
+  const tid = S.curTest || await window.DB.push(`classes/${cfg.classId}/tests`, cfg);
+  if(S.curTest) await window.DB.write(`classes/${cfg.classId}/tests/${S.curTest}`, cfg);
+  S.curTest=tid; syncAnim(); toast(`✓ "${cfg.name}" saqlandi`);
 }
 
-function drawOMRCard(pdf, cfg, cls, stu, x, y, w, h) {
-  const n = cfg.count;
-  const totalMax = getTotalMax(n, cfg.blocks);
-  const OPTS = ['A','B','C','D'];
+// ════════════════════════════════════════════════
+// OMR PDF — full A4, big bubbles, QR-style ID
+// ════════════════════════════════════════════════
+function printOMR() {
+  const cfg=getTestCfg();
+  if(!cfg.classId){toast('Sinf tanlang');return;}
+  const cls=S.classes[cfg.classId]; if(!cls){toast('Sinf topilmadi');return;}
+  const stus=Object.values(cls.students||{}); if(!stus.length){toast('O\'quvchilar yo\'q');return;}
 
-  // ── WHITE BG + BORDER ──
-  pdf.setFillColor(255,255,255);
-  pdf.rect(x, y, w, h, 'F');
-  pdf.setDrawColor(0,0,0);
-  pdf.setLineWidth(0.4);
-  pdf.rect(x, y, w, h, 'S');
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({format:'a4',orientation:'portrait',unit:'mm'});
+  stus.forEach((stu,i)=>{ if(i>0)pdf.addPage(); drawOMR(pdf,cfg,cls,stu,6,6,198,285); });
+  pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
+  toast(`✓ ${stus.length} ta titul varoq`);
+}
 
-  // ── 4 CORNER BLACK SQUARES (alignment markers) ──
-  const M = 4; // marker size mm
-  const corners = [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]];
-  corners.forEach(([cx,cy]) => {
-    pdf.setFillColor(0,0,0);
-    pdf.rect(cx, cy, M, M, 'F');
+function drawOMR(pdf,cfg,cls,stu,x,y,w,h) {
+  const n=cfg.count, OPTS=['A','B','C','D'];
+  const totalMax=getTotalMax(n,cfg.blocks);
+  const M=5; // corner marker size
+
+  // BG
+  pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.4); pdf.rect(x,y,w,h,'S');
+
+  // Corner black squares
+  [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]].forEach(([cx,cy])=>{
+    pdf.setFillColor(0,0,0); pdf.rect(cx,cy,M,M,'F');
+    pdf.setFillColor(255,255,255); pdf.rect(cx+1,cy+1,M-2,M-2,'F');
+    pdf.setFillColor(0,0,0); pdf.rect(cx+1.8,cy+1.8,M-3.6,M-3.6,'F');
   });
 
-  // ── HEADER INFO (NAME / EXAM / DATE lines) ──
-  let hy = y + M + 2;
-  pdf.setDrawColor(0,0,0);
-  pdf.setLineWidth(0.3);
-  pdf.setFontSize(7);
-  pdf.setFont('helvetica','bold');
-  pdf.setTextColor(0,0,0);
-
-  // NAME line
+  // Header lines
+  let hy=y+M+3;
+  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
   pdf.text('ISM FAMILYA :', x+M+1, hy+3);
-  pdf.line(x+M+28, hy+4, x+w-M-2, hy+4);
+  pdf.setLineWidth(0.4); pdf.setDrawColor(0,0,0);
+  pdf.line(x+M+32, hy+3.5, x+w-M-2, hy+3.5);
+  hy+=8;
+  pdf.text(`FAN: ${cfg.subject}`, x+M+1, hy+3);
+  pdf.text(`SINF: ${cls.name}`, x+w/2, hy+3);
+  pdf.text(`TUR: ${cfg.name}`, x+M+1, hy+9);
+  pdf.text(`SANA: ${fmtD(cfg.date)}`, x+w/2, hy+9);
+  hy+=13;
 
-  hy += 7;
-  // EXAM line
-  pdf.text('FAN :', x+M+1, hy+3);
-  pdf.text(cfg.subject, x+M+12, hy+3);
-  pdf.text('SINF :', x+w/2-10, hy+3);
-  pdf.text(cls.name, x+w/2+4, hy+3);
+  // Thick separator
+  pdf.setFillColor(0,0,0); pdf.rect(x+M, hy, w-M*2, 1.2, 'F'); hy+=4;
 
-  hy += 7;
-  // DATE / TYPE line
-  pdf.text('TUR :', x+M+1, hy+3);
-  pdf.text(cfg.type, x+M+11, hy+3);
-  pdf.text('SANA :', x+w/2-10, hy+3);
-  pdf.text(fmtDate(cfg.date), x+w/2+5, hy+3);
+  // OMR grid — auto-fit to fill page
+  const botH=22; // space for bottom bar
+  const availH=y+h-botH-hy;
+  const nCols=n<=20?2:3;
+  const rowsPerCol=Math.ceil(n/nCols);
+  const rowH=Math.max(8, Math.min(13, availH/(rowsPerCol+1)));
+  const bR=Math.min(4.2,(rowH-2)/2); // bubble radius
+  const bStep=bR*2+2.2;
+  const colW=(w-M*2-4)/nCols;
+  const numW=11;
 
-  // ── SEPARATOR LINE ──
-  hy += 6;
-  pdf.setLineWidth(0.5);
-  pdf.line(x+M, hy, x+w-M, hy);
-  pdf.setLineWidth(0.3);
+  // Col headers
+  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(40,40,40);
+  for(let c=0;c<nCols;c++){
+    const cx=x+M+2+c*colW;
+    if(c>0){ pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3); pdf.line(cx-2,hy,cx-2,hy+availH); }
+    OPTS.forEach((o,oi)=>{ pdf.text(o,cx+numW+oi*bStep+bR+3,hy+4,{align:'center'}); });
+  }
 
-  // ── OMR BUBBLE GRID ──
-  // Available height for bubbles (leave 22mm for bottom bar)
-  const omrTop = hy + 4;
-  const omrBot = y + h - 22;
-  const omrH = omrBot - omrTop;
-
-  // Auto-fit: calculate rowH so bubbles fill available space
-  const nCols = n <= 20 ? 2 : 3;
-  const rowsPerCol = Math.ceil(n / nCols);
-  const rowH = Math.min(12, Math.floor(omrH / (rowsPerCol + 1))); // +1 for header
-  const bubbleR = Math.min(3.8, (rowH - 2) / 2); // big circles
-  const colW = (w - M*2 - 4) / nCols;
-  const numW = 10;
-  const bubbleStep = bubbleR*2 + 2;
-
-  // Column headers
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica','bold');
-  for (let c = 0; c < nCols; c++) {
-    const cx = x + M + 2 + c * colW;
-    pdf.setTextColor(60,60,60);
-    // Col separator line
-    if (c > 0) {
-      pdf.setDrawColor(200,200,200);
-      pdf.setLineWidth(0.3);
-      pdf.line(cx - 2, omrTop, cx - 2, omrBot);
-    }
-    OPTS.forEach((opt, oi) => {
-      const bx = cx + numW + oi * bubbleStep + bubbleR;
-      pdf.text(opt, bx, omrTop + 4, {align:'center'});
+  for(let i=1;i<=n;i++){
+    const col=Math.floor((i-1)/rowsPerCol), row=(i-1)%rowsPerCol;
+    const cx=x+M+2+col*colW, qy=hy+5+(row+1)*rowH;
+    if(row%2===0){ pdf.setFillColor(247,249,255); pdf.rect(cx,qy-rowH/2,colW-3,rowH,'F'); }
+    pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+    pdf.text(String(i),cx+numW-1,qy+2.5,{align:'right'});
+    const sc=getScore(i,cfg.blocks);
+    pdf.setFontSize(5.5); pdf.setTextColor(150,150,150);
+    pdf.text(`${sc}b`,cx+numW+0.5,qy-1.5);
+    OPTS.forEach((_,oi)=>{
+      const bx=cx+numW+oi*bStep+bR+3;
+      pdf.setFillColor(255,255,255); pdf.setDrawColor(20,20,20); pdf.setLineWidth(0.65);
+      pdf.circle(bx,qy,bR,'FD');
     });
   }
 
-  for (let i = 1; i <= n; i++) {
-    const col = Math.floor((i-1) / rowsPerCol);
-    const row = (i-1) % rowsPerCol;
-    const cx = x + M + 2 + col * colW;
-    const qy = omrTop + 6 + (row + 1) * rowH;
+  // Bottom bar
+  const botY=y+h-botH;
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.6); pdf.line(x+M,botY,x+w-M,botY);
+  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(`Jami ball: __________ / ${totalMax.toFixed(1)}`,x+M+2,botY+7);
+  pdf.text(`Foiz: __________% `,x+M+2,botY+14);
 
-    // Alternating row bg
-    if (row % 2 === 0) {
-      pdf.setFillColor(246,248,252);
-      pdf.rect(cx, qy - rowH/2 - 0.5, colW - 2, rowH, 'F');
-    }
+  // QR-style ID box (right side of bottom)
+  const qx=x+w-M-38, qy2=botY+1, qw=36, qh=botH-3;
+  pdf.setFillColor(255,255,255); pdf.rect(qx,qy2,qw,qh,'F');
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7); pdf.rect(qx,qy2,qw,qh,'S');
 
-    // Question number
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica','bold');
-    pdf.setTextColor(0,0,0);
-    pdf.text(String(i), cx + numW - 1, qy + 2, {align:'right'});
-
-    // Score
-    const sc = getScore(i, cfg.blocks);
-    pdf.setFontSize(5);
-    pdf.setTextColor(150,150,150);
-    pdf.text(`${sc}b`, cx + numW + 0.5, qy - 1);
-
-    // Big bubbles
-    OPTS.forEach((opt, oi) => {
-      const bx = cx + numW + oi * bubbleStep + bubbleR + 5;
-      pdf.setFillColor(255,255,255);
-      pdf.setDrawColor(20,20,20);
-      pdf.setLineWidth(0.6);
-      pdf.circle(bx, qy, bubbleR, 'FD');
-    });
-  }
-
-  // ── BOTTOM BAR: total + QR-style ID ──
-  const botY = y + h - 20;
-  pdf.setDrawColor(0,0,0);
-  pdf.setLineWidth(0.6);
-  pdf.line(x+M, botY, x+w-M, botY);
-
-  // Left: score fields
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica','bold');
-  pdf.setTextColor(0,0,0);
-  pdf.text(`Jami ball: _________ / ${totalMax.toFixed(1)}`, x+M+2, botY+7);
-  pdf.text(`Foiz: _________%`, x+M+2, botY+14);
-
-  // Right: large QR-style ID marker (30x18mm)
-  const qrX = x + w - M - 34;
-  const qrY = botY + 1;
-  const qrW = 32;
-  const qrH = 17;
-
-  // QR border
-  pdf.setFillColor(255,255,255);
-  pdf.rect(qrX, qrY, qrW, qrH, 'F');
-  pdf.setDrawColor(0,0,0);
-  pdf.setLineWidth(0.8);
-  pdf.rect(qrX, qrY, qrW, qrH, 'S');
-
-  // QR finder pattern (top-left 7x7)
-  const drawFinder = (fx, fy, sz) => {
-    pdf.setFillColor(0,0,0); pdf.rect(fx,fy,sz,sz,'F');
-    pdf.setFillColor(255,255,255); pdf.rect(fx+sz*1/7,fy+sz*1/7,sz*5/7,sz*5/7,'F');
-    pdf.setFillColor(0,0,0); pdf.rect(fx+sz*2/7,fy+sz*2/7,sz*3/7,sz*3/7,'F');
+  // Finder patterns (3 corners)
+  const df=(fx,fy,s)=>{
+    pdf.setFillColor(0,0,0);pdf.rect(fx,fy,s,s,'F');
+    pdf.setFillColor(255,255,255);pdf.rect(fx+s/7,fy+s/7,s*5/7,s*5/7,'F');
+    pdf.setFillColor(0,0,0);pdf.rect(fx+s*2/7,fy+s*2/7,s*3/7,s*3/7,'F');
   };
-  const fp = 5; // finder size mm
-  drawFinder(qrX+1, qrY+1, fp);        // top-left
-  drawFinder(qrX+qrW-fp-1, qrY+1, fp); // top-right
-  drawFinder(qrX+1, qrY+qrH-fp-1, fp); // bottom-left
+  const fs=6;
+  df(qx+1,qy2+1,fs); df(qx+qw-fs-1,qy2+1,fs); df(qx+1,qy2+qh-fs-1,fs);
 
-  // ID data dots (pseudo-random from ID string)
+  // Data dots from ID
   pdf.setFillColor(0,0,0);
-  const idStr = stu.id || 'XXXX';
-  for (let di = 0; di < idStr.length * 2; di++) {
-    const code = idStr.charCodeAt(di % idStr.length) + di * 17;
-    const dx = qrX + fp + 3 + (code % 14);
-    const dy = qrY + 1 + ((code * 3) % (qrH - 2));
-    if (dx < qrX + qrW - 2 && dy > qrY + 1 && dy < qrY + qrH - 2) {
-      pdf.rect(dx, dy, 1.2, 1.2, 'F');
-    }
+  const idStr=stu.id||'XXXX';
+  for(let di=0;di<idStr.length*3;di++){
+    const code=idStr.charCodeAt(di%idStr.length)*7+di*13;
+    const dx=qx+fs+3+(code%Math.floor(qw-fs-5));
+    const dy=qy2+2+((code*3)%Math.floor(qh-4));
+    if(dx>qx+fs+2&&dx<qx+qw-3&&dy>qy2+2&&dy<qy2+qh-3)
+      pdf.rect(dx,dy,1.3,1.3,'F');
   }
-
-  // ID text below QR
-  pdf.setFontSize(6);
-  pdf.setFont('helvetica','bold');
-  pdf.setTextColor(0,0,0);
-  pdf.text(stu.id, qrX + qrW/2, qrY + qrH + 3, {align:'center'});
+  pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(stu.id,qx+qw/2,qy2+qh+3,{align:'center'});
+  pdf.setFontSize(5.5); pdf.setTextColor(100,100,100);
+  pdf.text(`${cfg.name} | ${cfg.subject}`,qx+qw/2,qy2+qh+7,{align:'center'});
 }
 
-// ══════════════════════════════════════════════════════
-//  SCANNER
-// ══════════════════════════════════════════════════════
-function populateScanSelects() {
-  const sc = document.getElementById('scanClass');
-  sc.innerHTML = '<option value="">Sinf</option>';
-  Object.entries(APP.classes||{}).forEach(([id,c]) => {
-    sc.innerHTML += `<option value="${id}">${c.name}</option>`;
-  });
-  if (APP.curClass) { sc.value = APP.curClass; loadScanTest(); }
+// ════════════════════════════════════════════════
+// SCANNER
+// ════════════════════════════════════════════════
+function fillScSelects() {
+  const el=document.getElementById('scCls');
+  el.innerHTML='<option value="">Sinf</option>';
+  Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
+  if(S.curCls){el.value=S.curCls;scLoadTest();}
 }
 
-function loadScanTest() {
-  const clsId = document.getElementById('scanClass').value;
-  const st = document.getElementById('scanTest');
-  st.innerHTML = '<option value="">Test</option>';
-  if (!clsId) return;
-  Object.entries(APP.classes[clsId]?.tests||{}).forEach(([tid,t]) => {
-    st.innerHTML += `<option value="${tid}">${t.subject} — ${fmtDate(t.date)}</option>`;
-  });
-  if (APP.curTest) st.value = APP.curTest;
-  loadScanStudents();
+function scLoadTest() {
+  const cid=document.getElementById('scCls').value;
+  const el=document.getElementById('scTest');
+  el.innerHTML='<option value="">Test</option>';
+  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>
+    el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
+  if(S.curTest){el.value=S.curTest;}
+  scLoadStudents();
 }
 
-function loadScanStudents() {
-  const clsId = document.getElementById('scanClass').value;
-  const sel = document.getElementById('scanStudent');
-  sel.innerHTML = '<option value="">— O\'quvchini tanlang —</option>';
-  Object.entries(APP.classes[clsId]?.students||{}).forEach(([sid,s]) => {
-    sel.innerHTML += `<option value="${sid}">${s.name}</option>`;
-  });
+function scLoadStudents() {
+  const cid=document.getElementById('scCls').value;
+  const el=document.getElementById('scStu');
+  el.innerHTML='<option value="">— Avtomatik aniqlanadi —</option>';
+  Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>
+    el.innerHTML+=`<option value="${sid}">${s.name}</option>`);
   renderManGrid();
 }
 
 function renderManGrid() {
-  const clsId = document.getElementById('scanClass').value;
-  const testId = document.getElementById('scanTest').value;
-  const t = APP.classes[clsId]?.tests?.[testId];
-  const n = t?.count || 15;
-  const g = document.getElementById('manGrid');
-  g.innerHTML = '';
-  for (let i=1; i<=n; i++) {
-    const d = document.createElement('div');
-    d.className = 'ans-cell';
-    d.innerHTML = `<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="m_${i}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
+  const cid=document.getElementById('scCls').value, tid=document.getElementById('scTest').value;
+  const t=S.classes[cid]?.tests?.[tid]; const n=t?.count||15;
+  const g=document.getElementById('manGrid'); g.innerHTML='';
+  for(let i=1;i<=n;i++){
+    const d=document.createElement('div'); d.className='ac';
+    d.innerHTML=`<span>${i}</span><input type="text" maxlength="1" placeholder="?" id="m_${i}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">`;
     g.appendChild(d);
   }
 }
 
 async function startCam() {
   try {
-    APP.camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
-    });
-    document.getElementById('camVid').srcObject = APP.camStream;
-    document.getElementById('scanBox').style.display = 'block';
-    APP.scanInterval = setInterval(tryScanFrame, 600);
-    toast('📷 Kamera yoqildi');
-  } catch(e) {
-    toast('⚠️ Ruxsat kerak. Rasmni yuklang.');
-  }
+    S.cam=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}});
+    document.getElementById('camVid').srcObject=S.cam;
+    document.getElementById('scanBox').style.display='block';
+    S.scanTick=setInterval(scanFrame,800); toast('📷 Kamera yoqildi');
+  } catch(e){ toast('⚠️ Kameraga ruxsat kerak'); }
 }
 
 function stopCam() {
-  if (APP.camStream) { APP.camStream.getTracks().forEach(t=>t.stop()); APP.camStream = null; }
-  clearInterval(APP.scanInterval);
-  document.getElementById('scanBox').style.display = 'none';
+  if(S.cam){S.cam.getTracks().forEach(t=>t.stop());S.cam=null;}
+  clearInterval(S.scanTick);
+  document.getElementById('scanBox').style.display='none';
 }
 
-function tryScanFrame() {
-  const video = document.getElementById('camVid');
-  if (video.readyState < 2) return;
-  const canvas = document.getElementById('camCanvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-  // Try jsQR on the frame for QR code (optional)
-  const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-  const qr = jsQR(imgData.data, imgData.width, imgData.height);
-  if (qr) {
-    processQRData(qr.data);
-  }
-}
-
-function processQRData(data) {
-  try {
-    const parsed = JSON.parse(data);
-    if (parsed.studentId) {
-      document.getElementById('scanStudent').value = parsed.studentId;
-      if (parsed.answers) {
-        Object.entries(parsed.answers).forEach(([q,a]) => {
-          const el = document.getElementById('m_'+q);
-          if (el) el.value = a;
-        });
-        checkNow();
-      }
-    }
-  } catch(e) {
-    // Not QR JSON, treat as text
-    toast('QR: ' + data.substring(0,30));
-  }
+function scanFrame() {
+  const v=document.getElementById('camVid'); if(v.readyState<2) return;
+  const c=document.getElementById('camCvs'); c.width=v.videoWidth; c.height=v.videoHeight;
+  const ctx=c.getContext('2d'); ctx.drawImage(v,0,0);
+  const d=ctx.getImageData(0,0,c.width,c.height);
+  const qr=jsQR(d.data,d.width,d.height);
+  if(qr) parseQR(qr.data);
 }
 
 function uploadImg(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.getElementById('camCanvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img,0,0);
-      const imgData = canvas.getContext('2d').getImageData(0,0,img.width,img.height);
-      const qr = jsQR(imgData.data, imgData.width, imgData.height);
-      if (qr) { processQRData(qr.data); toast('✓ QR aniqlandi'); }
-      else toast('QR topilmadi. Javoblarni qo\'lda kiriting.');
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=e=>{
+    const img=new Image(); img.onload=()=>{
+      const c=document.getElementById('camCvs'); c.width=img.width; c.height=img.height;
+      c.getContext('2d').drawImage(img,0,0);
+      const d=c.getContext('2d').getImageData(0,0,img.width,img.height);
+      const qr=jsQR(d.data,d.width,d.height);
+      if(qr){parseQR(qr.data);toast('✓ QR aniqlandi');}
+      else toast('QR topilmadi. Qo\'lda kiriting.');
+    }; img.src=e.target.result;
+  }; r.readAsDataURL(f);
+}
+
+function parseQR(data) {
+  try {
+    const p=JSON.parse(data);
+    if(p.sid){
+      document.getElementById('scStu').value=p.sid;
+      if(p.answers){ Object.entries(p.answers).forEach(([q,a])=>{ const el=document.getElementById('m_'+q); if(el)el.value=a; }); checkNow(); }
+    } else if(p.id) { // ID only
+      const cid=document.getElementById('scCls').value;
+      Object.entries(S.classes[cid]?.students||{}).forEach(([sid,s])=>{ if(s.id===p.id) document.getElementById('scStu').value=sid; });
+    }
+  } catch(e){ toast('QR: '+data.substring(0,20)); }
 }
 
 function checkNow() {
-  const clsId = document.getElementById('scanClass').value;
-  const testId = document.getElementById('scanTest').value;
-  const stuId  = document.getElementById('scanStudent').value;
-  if (!clsId || !testId) { toast('Sinf va testni tanlang'); return; }
-  const t = APP.classes[clsId]?.tests?.[testId];
-  if (!t) { toast('Test topilmadi'); return; }
-
-  const given = {};
-  for (let i=1; i<=t.count; i++) {
-    const el = document.getElementById('m_'+i);
-    if (el?.value.trim()) given[i] = el.value.trim().toUpperCase();
+  const cid=document.getElementById('scCls').value, tid=document.getElementById('scTest').value;
+  const sid=document.getElementById('scStu').value;
+  if(!cid||!tid){toast('Sinf va testni tanlang');return;}
+  const t=S.classes[cid]?.tests?.[tid]; if(!t){toast('Test topilmadi');return;}
+  const given={};
+  for(let i=1;i<=t.count;i++){const el=document.getElementById('m_'+i);if(el?.value.trim())given[i]=el.value.trim().toUpperCase();}
+  let corr=0,earned=0,total=0;
+  for(let i=1;i<=t.count;i++){
+    const s=getScore(i,t.blocks); total+=s;
+    if(given[i]&&given[i]===(t.correctAnswers[i]||'')){corr++;earned+=s;}
   }
-
-  let correct=0, earned=0, total=0;
-  for (let i=1; i<=t.count; i++) {
-    const s = getScore(i, t.blocks);
-    total += s;
-    if (given[i] && given[i] === (t.correctAnswers[i]||'')) { correct++; earned+=s; }
+  const pct=total>0?Math.round(earned/total*100):0;
+  const stuName=sid?S.classes[cid]?.students?.[sid]?.name:'—';
+  const col=pct>=85?'var(--g)':pct>=50?'var(--y)':'var(--r)';
+  let bubbles='';
+  for(let i=1;i<=t.count;i++){
+    const a=given[i]||'',ri=t.correctAnswers[i]||'';
+    const cls2=!ri?'rn':a===ri?'rg':'rr';
+    bubbles+=`<span class="rb ${cls2}" title="${i}: ${a||'—'} / ${ri||'?'}">${i}</span>`;
   }
-  const pct = total>0 ? Math.round(earned/total*100) : 0;
-  const stuName = stuId ? APP.classes[clsId]?.students?.[stuId]?.name : '—';
-
-  // Build visual result
-  let bubbles = '';
-  for (let i=1; i<=t.count; i++) {
-    const ans = given[i]||'';
-    const right = t.correctAnswers[i]||'';
-    const cls2 = !right ? 'rb-na' : ans===right ? 'rb-ok' : 'rb-no';
-    const title = `${i}: Siz:${ans||'—'} | To'g'ri:${right||'?'}`;
-    bubbles += `<span class="res-bubble ${cls2}" title="${title}">${i}</span>`;
-  }
-
-  const color = pct>=85?'var(--g)':pct>=50?'var(--y)':'var(--r)';
-  document.getElementById('resCard').style.display = 'block';
-  document.getElementById('resContent').innerHTML = `
-    <p style="font-size:14px;font-weight:700;margin-bottom:12px">${stuName}</p>
-    <div class="g3" style="margin-bottom:12px">
-      <div class="stat"><div class="stat-n" style="color:${color}">${pct}%</div><div class="stat-l">Foiz</div></div>
-      <div class="stat"><div class="stat-n">${earned.toFixed(1)}</div><div class="stat-l">Ball / ${total.toFixed(1)}</div></div>
-      <div class="stat"><div class="stat-n">${correct}</div><div class="stat-l">To'g'ri / ${t.count}</div></div>
+  document.getElementById('resCard').style.display='block';
+  document.getElementById('resBody').innerHTML=`
+    <p style="font-size:14px;font-weight:700;margin-bottom:10px">${stuName}</p>
+    <div class="g3" style="margin-bottom:10px">
+      <div class="stat"><div class="sn" style="color:${col}">${pct}%</div><div class="sl">Foiz</div></div>
+      <div class="stat"><div class="sn">${earned.toFixed(1)}</div><div class="sl">Ball / ${total.toFixed(1)}</div></div>
+      <div class="stat"><div class="sn">${corr}</div><div class="sl">To'g'ri / ${t.count}</div></div>
     </div>
-    <div class="prog"><div class="prog-b" style="width:${pct}%;background:${color}"></div></div>
-    <div style="margin:14px 0;display:flex;flex-wrap:wrap;gap:4px">${bubbles}</div>
-    <p style="font-size:11px;color:var(--m)">🟢 To'g'ri &nbsp; 🔴 Noto'g'ri &nbsp; ⚪ Javob yo'q</p>`;
-
-  APP.pendingResult = { stuId, stuName, clsId, testId, earned, total, pct, correct, given };
+    <div class="prog"><div class="pb" style="width:${pct}%;background:${col}"></div></div>
+    <div style="margin:12px 0;display:flex;flex-wrap:wrap;gap:3px">${bubbles}</div>
+    <p style="font-size:11px;color:var(--m)">🟢 To'g'ri &nbsp;🔴 Noto'g'ri &nbsp;⚪ Javob yo'q</p>`;
+  S.pendRes={sid,stuName,cid,tid,earned,total,pct,corr,given};
   toast(`${stuName}: ${pct}%`);
 }
 
-async function saveResult() {
-  const r = APP.pendingResult;
-  if (!r) return;
-  await window.DB.write(`classes/${r.clsId}/tests/${r.testId}/results/${r.stuId||'anon_'+Date.now()}`, {
-    stuName: r.stuName,
-    earned: r.earned,
-    total: r.total,
-    pct: r.pct,
-    correct: r.correct,
-    given: r.given,
-    savedAt: Date.now()
+async function saveRes() {
+  const r=S.pendRes; if(!r) return;
+  const key=r.sid||'anon_'+Date.now();
+  await window.DB.write(`classes/${r.cid}/tests/${r.tid}/results/${key}`,{
+    stuName:r.stuName, earned:r.earned, total:r.total, pct:r.pct, correct:r.corr, given:r.given, savedAt:Date.now()
   });
-  APP.pendingResult = null;
-  toast('✓ Jadvalga saqlandi');
-  syncAnim();
-  // clear inputs
+  S.pendRes=null; syncAnim(); toast('✓ Saqlandi');
   document.querySelectorAll('#manGrid input').forEach(i=>i.value='');
-  document.getElementById('resCard').style.display = 'none';
+  document.getElementById('resCard').style.display='none';
 }
 
-// ══════════════════════════════════════════════════════
-//  RESULTS
-// ══════════════════════════════════════════════════════
-function populateResSelects() {
-  const rc = document.getElementById('resCls');
-  rc.innerHTML = '<option value="">Sinf</option>';
-  Object.entries(APP.classes||{}).forEach(([id,c]) => {
-    rc.innerHTML += `<option value="${id}">${c.name}</option>`;
-  });
-  if (APP.curClass) { rc.value = APP.curClass; loadResTest(); }
+// ════════════════════════════════════════════════
+// RESULTS
+// ════════════════════════════════════════════════
+function fillResSelects() {
+  const el=document.getElementById('rCls');
+  el.innerHTML='<option value="">Sinf</option>';
+  Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
+  if(S.curCls){el.value=S.curCls;rLoadTest();}
 }
 
-function loadResTest() {
-  const clsId = document.getElementById('resCls').value;
-  const rt = document.getElementById('resTest');
-  rt.innerHTML = '<option value="">Test</option>';
-  Object.entries(APP.classes[clsId]?.tests||{}).forEach(([tid,t]) => {
-    rt.innerHTML += `<option value="${tid}">${t.subject} — ${fmtDate(t.date)}</option>`;
-  });
-  if (APP.curTest) rt.value = APP.curTest;
-  renderResults();
+function rLoadTest() {
+  const cid=document.getElementById('rCls').value;
+  const el=document.getElementById('rTest');
+  el.innerHTML='<option value="">Test</option>';
+  Object.entries(S.classes[cid]?.tests||{}).forEach(([tid,t])=>
+    el.innerHTML+=`<option value="${tid}">${t.name||t.subject} — ${fmtD(t.date)}</option>`);
+  if(S.curTest) el.value=S.curTest;
+  renderRes();
 }
 
-function renderResults() {
-  const clsId = document.getElementById('resCls').value;
-  const testId = document.getElementById('resTest').value;
-  if (!clsId || !testId) {
-    document.getElementById('rHead').innerHTML = '';
-    document.getElementById('rBody').innerHTML = '<tr><td style="color:var(--m);padding:20px">Sinf va testni tanlang</td></tr>';
-    return;
-  }
-  const cls = APP.classes[clsId];
-  const t = cls?.tests?.[testId];
-  if (!t) return;
+function renderRes() {
+  const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
+  if(!cid||!tid){ document.getElementById('rHead').innerHTML=''; document.getElementById('rBody').innerHTML='<tr><td style="color:var(--m);padding:16px">Sinf va testni tanlang</td></tr>'; return; }
+  const cls=S.classes[cid], t=cls?.tests?.[tid]; if(!t) return;
+  const stus=Object.values(cls.students||{}), res=t.results||{};
+  const checked=Object.keys(res).length;
+  const scores=Object.values(res).map(r=>r.pct);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  document.getElementById('stT').textContent=stus.length;
+  document.getElementById('stC').textContent=checked;
+  document.getElementById('stA').textContent=avg?avg+'%':'—';
 
-  const students = Object.values(cls.students||{});
-  const results = t.results||{};
-  const checked = Object.keys(results).length;
-  const scores = Object.values(results).map(r=>r.pct);
-  const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  let hh=`<tr><th>#</th><th>F.I.Sh</th>`;
+  for(let i=1;i<=t.count;i++) hh+=`<th title="${getScore(i,t.blocks)}b">${i}</th>`;
+  hh+=`<th>Ball</th><th>Max</th><th>%</th><th>Baho</th></tr>`;
+  document.getElementById('rHead').innerHTML=hh;
 
-  document.getElementById('stTotal').textContent = students.length;
-  document.getElementById('stChecked').textContent = checked;
-  document.getElementById('stAvg').textContent = avg ? avg+'%' : '—';
+  const rById={};
+  Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
 
-  // Head
-  let hh = '<tr><th>#</th><th>F.I.Sh</th>';
-  for (let i=1;i<=t.count;i++) hh += `<th title="${getScore(i,t.blocks)}b">${i}</th>`;
-  hh += '<th>Ball</th><th>%</th><th>B</th></tr>';
-  document.getElementById('rHead').innerHTML = hh;
-
-  // Body
-  const resById = {};
-  Object.entries(results).forEach(([sid,r])=>{ resById[sid]=r; });
-
-  document.getElementById('rBody').innerHTML = students.map((s,i) => {
-    const r = resById[s.id];
-    let cells = '';
-    for (let q=1;q<=t.count;q++) {
-      const ans = r?.given?.[q]||'';
-      const right = t.correctAnswers?.[q]||'';
-      const ok = ans && ans===right;
-      cells += `<td style="color:${ok?'#137333':'#a50e0e'};font-weight:700">${ans||'—'}</td>`;
+  document.getElementById('rBody').innerHTML=stus.map((s,i)=>{
+    const r=rById[s.id];
+    let cells='';
+    for(let q=1;q<=t.count;q++){
+      const a=r?.given?.[q]||'', ri=t.correctAnswers?.[q]||'', ok=a&&a===ri;
+      cells+=`<td style="color:${ok?'#137333':'#a50e0e'};font-weight:700">${a||'—'}</td>`;
     }
-    if (r) {
-      const grade = r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
-      const cc = r.pct>=85?'c-g':r.pct>=50?'c-y':'c-r';
+    if(r){
+      const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
+      const cc=r.pct>=85?'cg':r.pct>=50?'cy':'cr';
       return `<tr><td>${i+1}</td><td>${s.name}</td>${cells}
         <td class="${cc}">${r.earned.toFixed(1)}</td>
+        <td style="color:var(--m)">${r.total.toFixed(1)}</td>
         <td class="${cc}">${r.pct}%</td>
-        <td class="${cc}">${grade}</td></tr>`;
+        <td class="${cc}">${gr}</td></tr>`;
     }
-    return `<tr><td>${i+1}</td><td>${s.name}</td>${'<td style="color:#ccc">—</td>'.repeat(t.count)}<td>—</td><td>—</td><td>—</td></tr>`;
+    return `<tr><td>${i+1}</td><td style="color:var(--m)">${s.name}</td>${'<td>—</td>'.repeat(t.count)}<td>—</td><td>${getTotalMax(t.count,t.blocks).toFixed(1)}</td><td>—</td><td>—</td></tr>`;
   }).join('');
 }
 
+// ════════════════════════════════════════════════
+// EXCEL — formulalar bilan
+// ════════════════════════════════════════════════
 function exportExcel() {
-  const clsId = document.getElementById('resCls').value;
-  const testId = document.getElementById('resTest').value;
-  if (!clsId||!testId) { toast('Sinf va testni tanlang'); return; }
-  const cls = APP.classes[clsId];
-  const t = cls?.tests?.[testId];
-  const students = Object.values(cls.students||{});
-  const results = t.results||{};
-  const resById = {};
-  Object.entries(results).forEach(([sid,r])=>{ resById[sid]=r; });
+  const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
+  if(!cid||!tid){toast('Sinf va testni tanlang');return;}
+  const cls=S.classes[cid], t=cls?.tests?.[tid];
+  const stus=Object.values(cls.students||{}), res=t.results||{};
+  const rById={}; Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
+  const maxB=getTotalMax(t.count,t.blocks);
 
-  const wb = XLSX.utils.book_new();
-  const hdr = ['#','F.I.Sh',...Array.from({length:t.count},(_,i)=>`Savol ${i+1}`),'Ball','Maks','%','Baho'];
-  const rows = [
-    [`${t.type} | ${t.subject} | ${cls.name} | ${t.year}`],
-    hdr,
-    ...students.map((s,i) => {
-      const r = resById[s.id];
-      const row = [i+1, s.name];
-      for(let q=1;q<=t.count;q++) row.push(r?.given?.[q]||'');
-      if(r) row.push(r.earned.toFixed(1), r.total.toFixed(1), r.pct+'%', r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2);
-      else row.push('','','','');
-      return row;
-    }),
-    [],
-    [`O'qituvchi: ${cls.teacher}`, `Sana: ${fmtDate(t.date)}`]
-  ];
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'Natijalar');
-  XLSX.writeFile(wb, `${cls.name}-${t.subject}-${t.date}.xlsx`);
-  toast('✓ Excel yuklab olindi');
-}
+  const wb=XLSX.utils.book_new();
+  // ── Sheet 1: Natijalar ──
+  const rows=[];
+  rows.push([`${t.name||t.subject} | ${cls.name} | ${t.year}`]);
+  rows.push([]);
+  const hdr=['#','F.I.Sh',...Array.from({length:t.count},(_,i)=>`S${i+1}(${getScore(i+1,t.blocks)}b)`),'Ball','Maks','Foiz %','Baho'];
+  rows.push(hdr);
 
-function exportPDF() {
-  const clsId = document.getElementById('resCls').value;
-  const testId = document.getElementById('resTest').value;
-  if (!clsId||!testId) { toast('Sinf va testni tanlang'); return; }
-  const cls = APP.classes[clsId];
-  const t = cls?.tests?.[testId];
-  const students = Object.values(cls.students||{});
-  const results = t.results||{};
-  const resById = {};
-  Object.entries(results).forEach(([sid,r])=>{ resById[sid]=r; });
-
-  const {jsPDF} = window.jspdf;
-  const pdf = new jsPDF({format:'a4',orientation:'landscape',unit:'mm'});
-  const W=297, H=210;
-
-  pdf.setFillColor(26,115,232); pdf.rect(0,0,W,18,'F');
-  pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
-  pdf.text(`${t.type} | ${t.subject} | ${cls.name} | ${t.year}`, W/2, 11, {align:'center'});
-  pdf.setFontSize(7); pdf.setFont('helvetica','normal');
-  pdf.text(`${cls.teacher}  |  ${fmtDate(t.date)}`, W/2, 16, {align:'center'});
-
-  let y=26; const rowH=7;
-  pdf.setFontSize(7); pdf.setFont('helvetica','bold');
-  pdf.setFillColor(240,246,255); pdf.rect(4,y-5,W-8,rowH,'F');
-  pdf.setTextColor(26,115,232);
-  pdf.text('#',6,y); pdf.text('F.I.Sh',12,y);
-  for(let i=1;i<=Math.min(t.count,20);i++) pdf.text(String(i), 48+11*i, y, {align:'center'});
-  pdf.text('Ball',48+11*(Math.min(t.count,20)+1),y);
-  pdf.text('%',  48+11*(Math.min(t.count,20)+2),y);
-  pdf.text('B',  48+11*(Math.min(t.count,20)+3),y);
-  y+=rowH;
-
-  students.forEach((s,i) => {
-    if(y>H-14){pdf.addPage();y=20;}
-    const r = resById[s.id];
-    if(i%2===0){pdf.setFillColor(248,249,250);pdf.rect(4,y-5,W-8,rowH,'F');}
-    pdf.setTextColor(50,50,50); pdf.setFont('helvetica','normal');
-    pdf.text(String(i+1),6,y);
-    pdf.text(s.name.substring(0,22),12,y);
-    for(let q=1;q<=Math.min(t.count,20);q++){
-      const ans=r?.given?.[q]||'';
-      const right=t.correctAnswers?.[q]||'';
-      const ok=ans&&ans===right;
-      if(ans){pdf.setTextColor(ok?20:180,ok?130:20,ok?50:20);pdf.text(ans,48+11*q,y,{align:'center'});}
-    }
+  stus.forEach((s,i)=>{
+    const r=rById[s.id], row=[i+1,s.name];
+    for(let q=1;q<=t.count;q++) row.push(r?.given?.[q]||'');
+    const ballCol=XLSX.utils.encode_col(t.count+2); // Ball column letter
+    const maxCol=XLSX.utils.encode_col(t.count+3);
+    const rowNum=i+4; // data starts row 4
     if(r){
-      const g=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
-      const c=r.pct>=85?[20,130,50]:r.pct>=50?[180,110,0]:[180,20,20];
-      pdf.setTextColor(...c); pdf.setFont('helvetica','bold');
-      const offB=48+11*(Math.min(t.count,20)+1);
-      pdf.text(r.earned.toFixed(1),offB,y,{align:'center'});
-      pdf.text(r.pct+'%',offB+11,y,{align:'center'});
-      pdf.text(String(g),offB+22,y,{align:'center'});
+      row.push(r.earned, maxB);
+      // FORMULA: =C4/D4*100 style
+      row.push({f:`ROUND(${ballCol}${rowNum}/${maxCol}${rowNum}*100,1)`});
+      row.push({f:`IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.85,5,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.7,4,IF(${ballCol}${rowNum}/${maxCol}${rowNum}>=0.5,3,2)))`});
+    } else {
+      row.push('',maxB,'','');
     }
-    pdf.setDrawColor(220,220,220); pdf.line(4,y+2,W-4,y+2);
-    y+=rowH;
+    rows.push(row);
   });
 
-  const vals=Object.values(results);
+  rows.push([]);
+  rows.push(['','O\'RTACHA:','','','','','',
+    {f:`ROUND(AVERAGEIF(${XLSX.utils.encode_col(t.count+4)}4:${XLSX.utils.encode_col(t.count+4)}${stus.length+3},"<>",${XLSX.utils.encode_col(t.count+4)}4:${XLSX.utils.encode_col(t.count+4)}${stus.length+3}),1)`}
+  ]);
+  rows.push([`O'qituvchi: ${cls.teacher||'—'}`, `Sana: ${fmtD(t.date)}`]);
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  // Column widths
+  ws['!cols']=[{wch:4},{wch:26},...Array(t.count).fill({wch:7}),{wch:8},{wch:7},{wch:8},{wch:7}];
+  // Freeze header row
+  ws['!freeze']={xSplit:2,ySplit:3};
+  XLSX.utils.book_append_sheet(wb,ws,'Natijalar');
+
+  // ── Sheet 2: To'g'ri javoblar ──
+  const ca=[['Savol','To\'g\'ri','Ball']];
+  for(let i=1;i<=t.count;i++) ca.push([i,t.correctAnswers[i]||'',getScore(i,t.blocks)]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ca),'Javoblar');
+
+  XLSX.writeFile(wb,`${cls.name}-${t.name||t.subject}-${t.date}.xlsx`);
+  toast('✓ Excel (formulali) yuklab olindi');
+}
+
+// ════════════════════════════════════════════════
+// PDF NATIJALAR
+// ════════════════════════════════════════════════
+function exportPDF() {
+  const cid=document.getElementById('rCls').value, tid=document.getElementById('rTest').value;
+  if(!cid||!tid){toast('Sinf va testni tanlang');return;}
+  const cls=S.classes[cid], t=cls?.tests?.[tid];
+  const stus=Object.values(cls.students||{}), res=t.results||{};
+  const rById={}; Object.entries(res).forEach(([sid,r])=>rById[sid]=r);
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({format:'a4',orientation:'landscape',unit:'mm'});
+  const W=297,H=210;
+
+  // Header
+  pdf.setFillColor(26,115,232); pdf.rect(0,0,W,18,'F');
+  pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
+  pdf.text(`${t.name||t.subject} | ${cls.name} | ${t.year}`,W/2,11,{align:'center'});
+  pdf.setFontSize(7); pdf.setFont('helvetica','normal');
+  pdf.text(`O'qituvchi: ${cls.teacher||'—'}  |  Sana: ${fmtD(t.date)}  |  Maksimal ball: ${getTotalMax(t.count,t.blocks).toFixed(1)}`,W/2,16,{align:'center'});
+
+  let y=26, rH=7;
+  const maxShow=Math.min(t.count,18);
+  const offA=46+maxShow*11;
+
+  // Table header
+  pdf.setFillColor(240,246,255); pdf.rect(4,y-5,W-8,rH,'F');
+  pdf.setTextColor(26,115,232); pdf.setFontSize(7); pdf.setFont('helvetica','bold');
+  pdf.text('#',6,y); pdf.text('F.I.Sh',12,y);
+  for(let i=1;i<=maxShow;i++) pdf.text(String(i),46+i*11,y,{align:'center'});
+  pdf.text('Ball',offA,y,{align:'center'});
+  pdf.text('%',offA+13,y,{align:'center'});
+  pdf.text('B',offA+24,y,{align:'center'});
+  y+=rH;
+
+  stus.forEach((s,i)=>{
+    if(y>H-14){pdf.addPage();y=14;}
+    const r=rById[s.id];
+    if(i%2===0){pdf.setFillColor(249,250,255);pdf.rect(4,y-5,W-8,rH,'F');}
+    pdf.setTextColor(50,50,50); pdf.setFont('helvetica','normal'); pdf.setFontSize(7);
+    pdf.text(String(i+1),6,y); pdf.text(s.name.substring(0,22),12,y);
+    for(let q=1;q<=maxShow;q++){
+      const a=r?.given?.[q]||'',ri=t.correctAnswers?.[q]||'',ok=a&&a===ri;
+      if(a){pdf.setTextColor(ok?20:180,ok?130:20,ok?50:20);pdf.text(a,46+q*11,y,{align:'center'});}
+    }
+    if(r){
+      const gr=r.pct>=85?5:r.pct>=70?4:r.pct>=50?3:2;
+      const c=r.pct>=85?[20,130,50]:r.pct>=50?[180,110,0]:[180,20,20];
+      pdf.setTextColor(...c); pdf.setFont('helvetica','bold');
+      pdf.text(r.earned.toFixed(1),offA,y,{align:'center'});
+      pdf.text(r.pct+'%',offA+13,y,{align:'center'});
+      pdf.text(String(gr),offA+24,y,{align:'center'});
+    } else {
+      pdf.setTextColor(180,180,180); pdf.text('—',offA,y,{align:'center'});
+    }
+    pdf.setDrawColor(220,220,220); pdf.line(4,y+2,W-4,y+2); y+=rH;
+  });
+
+  // Footer
+  const vals=Object.values(res);
   const avg=vals.length?Math.round(vals.reduce((a,r)=>a+r.pct,0)/vals.length):0;
-  pdf.setFillColor(26,115,232); pdf.rect(0,H-8,W,8,'F');
+  pdf.setFillColor(26,115,232); pdf.rect(0,H-9,W,9,'F');
   pdf.setTextColor(255,255,255); pdf.setFontSize(7);
-  pdf.text(`O'rtacha: ${avg}%  |  Tekshirilgan: ${vals.length}/${students.length}`,W/2,H-3,{align:'center'});
-  pdf.save(`natija-${cls.name}-${t.subject}.pdf`);
+  pdf.text(`O'rtacha: ${avg}%  |  Tekshirilgan: ${vals.length}/${stus.length}`,W/2,H-4,{align:'center'});
+  pdf.save(`natija-${cls.name}-${t.name||t.subject}.pdf`);
   toast('✓ PDF yuklab olindi');
 }
 
-// ══════════════════════════════════════════════════════
-//  FIREBASE SETTINGS
-// ══════════════════════════════════════════════════════
-function saveFirebase() {
-  const cfg = {
-    apiKey: document.getElementById('fbApiKey').value.trim(),
-    authDomain: document.getElementById('fbAuth').value.trim(),
-    databaseURL: document.getElementById('fbDb').value.trim(),
-    projectId: document.getElementById('fbProject').value.trim()
-  };
-  if (!cfg.apiKey || !cfg.databaseURL) { toast('API Key va Database URL kerak'); return; }
-  localStorage.setItem('testhub_firebase', JSON.stringify(cfg));
-  toast('✓ Saqlandi. Qayta yuklanmoqda...');
-  setTimeout(() => location.reload(), 1000);
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+function fillClsSelects() {
+  const el=document.getElementById('tCls');
+  const cur=el.value;
+  el.innerHTML='<option value="">— Sinf tanlang —</option>';
+  Object.entries(S.classes||{}).forEach(([id,c])=>el.innerHTML+=`<option value="${id}">${c.name}</option>`);
+  if(cur) el.value=cur;
 }
 
-// ══════════════════════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════════════════════
-function populateSelects() {
-  const tc = document.getElementById('tClass');
-  const cur = tc.value;
-  tc.innerHTML = '<option value="">— Sinf tanlang —</option>';
-  Object.entries(APP.classes||{}).forEach(([id,c]) => {
-    tc.innerHTML += `<option value="${id}">${c.name}</option>`;
-  });
-  if (cur) tc.value = cur;
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  const p = d.split('-');
-  return p.length===3 ? `${p[2]}.${p[1]}.${p[0]}` : d;
+function fmtD(d) {
+  if(!d) return '—';
+  const p=d.split('-');
+  return p.length===3?`${p[2]}.${p[1]}.${p[0]}`:d;
 }
 
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(()=>t.classList.remove('show'), 2800);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600);
 }
 
 function syncAnim() {
-  const s = document.getElementById('syncDot');
-  s.classList.add('show');
-  setTimeout(()=>s.classList.remove('show'), 1800);
+  const s=document.getElementById('sync');
+  s.classList.add('show'); setTimeout(()=>s.classList.remove('show'),1600);
 }
-
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// close modal on bg click
-document.querySelectorAll('.modal-bg').forEach(m => {
-  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
-});
 </script>
 </body>
 </html>
