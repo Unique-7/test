@@ -39,7 +39,7 @@ window.dispatchEvent(new Event('db-ready'));
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" onerror="console.warn('QRCode lib not loaded')"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
 :root{--p:#1a73e8;--pd:#1557b0;--ps:#e8f0fe;--g:#34a853;--r:#ea4335;--y:#fbbc04;
   --bg:#f0f4ff;--card:#fff;--txt:#202124;--m:#5f6368;--bd:#dadce0;--rad:12px;--sh:0 2px 14px rgba(0,0,0,.08)}
@@ -283,6 +283,9 @@ tr:hover td{background:#fafbff}
     </div>
 
     <div id="scanBox" style="display:none;margin-bottom:10px">
+      <div style="background:#fff8e1;border-radius:7px;padding:6px 10px;font-size:12px;margin-bottom:6px;color:#7a5500">
+        📐 Varoqni <strong>YOTIQ</strong> (landscape) tuting — ikki titul yonma-yon ko'rinsin
+      </div>
       <div class="scan-wrap">
         <video id="camVid" playsinline autoplay muted></video>
         <div class="sf"><div class="sl2"></div></div>
@@ -838,45 +841,57 @@ function printOMRTest(clsId, testId) {
   genOMRPdf(t, cls, stus);
 }
 
-function genOMRPdf(cfg, cls, stus) {
-  // QR kod uchun hidden canvas ishlatamiz
-  const makeQR = (stuId, stuName, testName) => new Promise(resolve => {
-    const data = JSON.stringify({id: stuId, name: stuName, test: testName});
+function makeQRDataUrl(text) {
+  // qrcode-generator library (window.qrcode)
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const modules = qr.getModuleCount();
+    const cellPx = 4;
+    const sz = modules * cellPx;
     const canvas = document.createElement('canvas');
-    // Try native QRCode library if available
-    if (typeof QRCode !== 'undefined') {
-      try {
-        QRCode.toCanvas(canvas, data, {width:96, margin:1}, err => {
-          resolve(err ? null : canvas.toDataURL('image/png'));
-        });
-        return;
-      } catch(e) {}
-    }
-    resolve(null); // fallback to pseudo-QR drawn by drawQRMatrix
-  });
-
-  Promise.all(stus.map(s => makeQR(s.id, s.name, cfg.name))).then(qrImgs => {
-    const {jsPDF} = window.jspdf;
-    const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
-    const pageW=210, pageH=297, mX=3, mY=3;
-    const cardW = pageW - mX*2;
-    const cardH = (pageH - mY*3) / 2;
-    stus.forEach((stu, i) => {
-      const slot = i % 2;
-      if (i > 0 && slot === 0) pdf.addPage();
-      const cardX = mX;
-      const cardY = slot === 0 ? mY : mY*2 + cardH;
-      drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH, qrImgs[i]);
-      if (slot === 0) {
-        pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
-        pdf.setLineDashPattern([2,2], 0);
-        pdf.line(mX, mY+cardH+mY/2, pageW-mX, mY+cardH+mY/2);
-        pdf.setLineDashPattern([], 0);
+    canvas.width = sz; canvas.height = sz;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,sz,sz);
+    ctx.fillStyle = '#000000';
+    for(let r=0;r<modules;r++){
+      for(let c=0;c<modules;c++){
+        if(qr.isDark(r,c)) ctx.fillRect(c*cellPx, r*cellPx, cellPx, cellPx);
       }
-    });
-    pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
-    toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
+    }
+    return canvas.toDataURL('image/png');
+  } catch(e) {
+    return null;
+  }
+}
+
+function genOMRPdf(cfg, cls, stus) {
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
+  const pageW=210, pageH=297, mX=3, mY=3;
+  const cardW = pageW - mX*2;
+  const cardH = (pageH - mY*3) / 2;
+
+  stus.forEach((stu, i) => {
+    const slot = i % 2;
+    if (i > 0 && slot === 0) pdf.addPage();
+    const cardX = mX;
+    const cardY = slot === 0 ? mY : mY*2 + cardH;
+    // Generate real QR for this student
+    const qrData = JSON.stringify({id: stu.id, name: stu.name, cls: cls.name, test: cfg.name});
+    const qrImg = makeQRDataUrl(qrData);
+    drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH, qrImg);
+    if (slot === 0) {
+      pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
+      pdf.setLineDashPattern([2,2], 0);
+      pdf.line(mX, mY+cardH+mY/2, pageW-mX, mY+cardH+mY/2);
+      pdf.setLineDashPattern([], 0);
+    }
   });
+  pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
+  toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
 }
 
 // Generate QR code into PDF using hidden canvas + jsQR-compatible encoding
@@ -1179,10 +1194,17 @@ function renderManGrid() {
 
 async function startCam() {
   try {
-    S.cam=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}});
+    S.cam=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:'environment',
+        width:{ideal:1920},
+        height:{ideal:1080}
+      }
+    });
     document.getElementById('camVid').srcObject=S.cam;
+    // rotate hint for landscape sheet
     document.getElementById('scanBox').style.display='block';
-    S.scanTick=setInterval(scanFrame,800); toast('📷 Kamera yoqildi');
+    S.scanTick=setInterval(scanFrame,700); toast('📷 Kamera yoqildi — varoqni YOTIQ tuting');
   } catch(e){ toast('⚠️ Kameraga ruxsat kerak'); }
 }
 
