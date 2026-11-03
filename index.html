@@ -477,6 +477,7 @@ function renderClsDetail(id) {
         <button class="btn bp bx" onclick="quickScan('${id}','${tid}')">📷 Tekshir</button>
         <button class="btn bo bx" onclick="openAnsModal('${id}','${tid}')">✏️ Javoblar</button>
         <button class="btn bo bx" onclick="printOMRTest('${id}','${tid}')">📄 PDF</button>
+        <button class="btn br bx" onclick="deleteTest('${id}','${tid}')">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -561,6 +562,7 @@ function renderTestsPage() {
         <div class="tcard-btns">
           <button class="btn bp bx" onclick="openTestDetail('${cid}','${tid}')">✏️ Javob+Skaner</button>
           <button class="btn bo bx" onclick="printOMRTest('${cid}','${tid}')">📄 PDF</button>
+          <button class="btn br bx" onclick="deleteTest('${cid}','${tid}')">🗑</button>
         </div>
       </div>
       <!-- Inline expand panel -->
@@ -798,6 +800,15 @@ function openAnsModal(clsId, testId) {
   openMd('mdAns');
 }
 
+async function deleteTest(cid, tid) {
+  const t = S.classes[cid]?.tests?.[tid];
+  const name = t?.name || t?.subject || 'Test';
+  if(!confirm(`"${name}" testini o'chirishni tasdiqlaysizmi?\nBarcha natijalar ham o'chadi.`)) return;
+  await window.DB.write(`classes/${cid}/tests/${tid}`, null);
+  if(S.curTest===tid) S.curTest=null;
+  syncAnim(); toast(`✓ "${name}" o'chirildi`);
+}
+
 async function saveAnsModal() {
   const cid=S.mdAnsClsId, tid=S.mdAnsTestId;
   const t=S.classes[cid]?.tests?.[tid]; if(!t) return;
@@ -828,11 +839,31 @@ function printOMRTest(clsId, testId) {
 }
 
 function genOMRPdf(cfg, cls, stus) {
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF({format:'a4',orientation:'portrait',unit:'mm'});
-  stus.forEach((stu,i)=>{ if(i>0) pdf.addPage(); drawOMR(pdf,cfg,cls,stu,4,4,202,289); });
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
+  // 2 ta o'quvchi bitta A4 da (yuqori va pastki yarmi)
+  const pageW = 210, pageH = 297;
+  const marginX = 3, marginY = 3;
+  const cardW = pageW - marginX*2;
+  const cardH = (pageH - marginY*3) / 2; // A4 ni 2 ga bo'l
+
+  stus.forEach((stu, i) => {
+    const pairIdx = Math.floor(i / 2);
+    const slot = i % 2; // 0=top, 1=bottom
+    if (i > 0 && slot === 0) pdf.addPage();
+    const cardX = marginX;
+    const cardY = slot === 0 ? marginY : marginY*2 + cardH;
+    drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH);
+    // divider line between two cards
+    if (slot === 0) {
+      pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
+      pdf.setLineDashPattern([2,2], 0);
+      pdf.line(marginX, marginY+cardH+marginY/2, pageW-marginX, marginY+cardH+marginY/2);
+      pdf.setLineDashPattern([], 0);
+    }
+  });
   pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
-  toast(`✓ ${stus.length} ta titul varoq`);
+  toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
 }
 
 function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
@@ -902,21 +933,25 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   // Roll No cell grid — 6 cells, ID chars inside
   const rnStartX = c1x + SQ + 1.5;
   const rnStartY = c1y + 5.5;
-  const cellSz = 5.5;
+  const cellSz = 7;   // kattaroq — skaner uchun
   const idChars = idStr.padEnd(6,' ').substring(0,6);
   for(let ci=0;ci<6;ci++){
     const rcx = rnStartX + ci*cellSz;
-    pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5);
-    pdf.rect(rcx, rnStartY, cellSz, cellSz, 'S');
+    pdf.setFillColor(255,255,255);
+    pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7);
+    pdf.rect(rcx, rnStartY, cellSz, cellSz, 'FD');
     const ch = idChars[ci].trim();
     if(ch){
-      pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-      pdf.text(ch, rcx+cellSz/2, rnStartY+cellSz-0.8, {align:'center'});
+      pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+      pdf.text(ch, rcx+cellSz/2, rnStartY+cellSz-1.2, {align:'center'});
     }
   }
+  // ID label under cells
+  pdf.setFontSize(5.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,100,100);
+  pdf.text('ID: '+idStr, rnStartX, rnStartY+cellSz+3);
   // alignment square top-right area
   sq(x + w - SQ - 1, c1y + 1);
-  c1y += 13;
+  c1y += 18; // kattaroq Roll No uchun ko'proq joy
 
   // 0-9 digit bubble rows (Roll No belgilash — rasmga o'xshash)
   abcdHeader(c1x + SQ + 1, c1y);
