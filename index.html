@@ -238,11 +238,9 @@ tr:hover td{background:#fafbff}
     </p>
   </div>
 
-  <!-- To'g'ri javoblar — test sahifasida ham ko'rish mumkin -->
-  <div class="card">
-    <div class="ct">✅ To'g'ri javoblar</div>
-    <p style="font-size:12px;color:var(--m);margin-bottom:9px">A, B, C, D — har savol uchun to'g'ri javob kiriting</p>
-    <div class="ag" id="corrGrid"></div>
+  <!-- Javoblar "Testlar" bo'limidan kiritiladi -->
+  <div class="note" style="font-size:12px">
+    💡 To'g'ri javoblarni kiritish uchun <strong>📋 Testlar</strong> bo'limiga o'ting → test kartasini bosing → <strong>✏️ Javob+Skaner</strong>
   </div>
 
   <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px">
@@ -838,149 +836,159 @@ function genOMRPdf(cfg, cls, stus) {
 }
 
 function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
-  const n=cfg.count, OPTS=['A','B','C','D'];
-  const totalMax=getTotalMax(n,cfg.blocks);
-  const M=6; // corner marker size mm
+  // ── Rasmga o'xshash klassik OMR: Roll No katak grid yuqorida,
+  //    qora to'rtburchak alignment marks har 10 qatorda, 3 ustun ──
+  const n = cfg.count, OPTS = ['A','B','C','D'];
+  const totalMax = getTotalMax(n, cfg.blocks);
   const idStr = stu.id || 'XXXX';
 
-  // White background + border
-  pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5); pdf.rect(x,y,w,h,'S');
+  // constants
+  const BK = 4.5;      // alignment square size mm
+  const bR = 3.4;      // bubble radius mm  (katta)
+  const bStep = bR*2 + 2.2; // horizontal gap between bubbles
+  const numW = 10;     // number column width
+  const rowH = 6.8;    // row height mm
+  const nCols = 3;     // always 3 columns like image
+  const rowsPerCol = Math.ceil(n / nCols);
+  const OPTS_W = numW + OPTS.length * bStep + 1;
+  const colW = (w - 8) / nCols;
 
-  // ── 4 Corner alignment markers (solid square with hollow ring) ──
-  [[x,y],[x+w-M,y],[x,y+h-M],[x+w-M,y+h-M]].forEach(([cx,cy])=>{
-    pdf.setFillColor(0,0,0); pdf.rect(cx,cy,M,M,'F');
-    pdf.setFillColor(255,255,255); pdf.rect(cx+1,cy+1,M-2,M-2,'F');
-    pdf.setFillColor(0,0,0); pdf.rect(cx+1.8,cy+1.8,M-3.6,M-3.6,'F');
+  // white bg
+  pdf.setFillColor(255,255,255); pdf.rect(x,y,w,h,'F');
+  pdf.setDrawColor(200,200,200); pdf.setLineWidth(0.3); pdf.rect(x,y,w,h,'S');
+
+  let curY = y + 3;
+  const lx = x + 4; // left padding
+
+  // ─────────────────────────────────────────────
+  // TOP SECTION: Name + Roll No grid + Info
+  // ─────────────────────────────────────────────
+
+  // Student name — avtomatik yoziladi
+  pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(stu.name || '—', lx, curY + 4);
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.4);
+  pdf.line(lx, curY+5, lx+80, curY+5);
+  pdf.setFontSize(6.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80);
+  pdf.text('F.I.Sh (avtomatik)', lx, curY+8.5);
+
+  // Roll No box — ID katak grid (rasmda yuqori o'ngda)
+  const rnX = lx + 85;
+  pdf.setFontSize(6.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text('Roll No', rnX, curY+3);
+  // 6-cell grid for digits
+  const cellW = 6, cellH = 6;
+  const idDigits = idStr.padEnd(6,' ').substring(0,6);
+  for(let ci=0;ci<6;ci++){
+    const cx2=rnX+ci*cellW, cy2=curY+4;
+    pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.5);
+    pdf.rect(cx2,cy2,cellW,cellH,'S');
+    pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+    const ch=idDigits[ci].trim();
+    if(ch) pdf.text(ch, cx2+cellW/2, cy2+cellH-1, {align:'center'});
+  }
+  // Dot-grid below Roll No — encoded ID bits (alignment aid)
+  pdf.setFillColor(0,0,0);
+  for(let bi=0;bi<8;bi++){
+    const code=idStr.charCodeAt(bi%idStr.length)||0;
+    const dotX=rnX+bi*2.8;
+    if(code & (1<<(7-bi))) pdf.rect(dotX, curY+11, 1.8, 1.8, 'F');
+    else { pdf.setDrawColor(180,180,180); pdf.circle(dotX+0.9, curY+11.9, 0.7, 'S'); }
+  }
+  pdf.setFontSize(5); pdf.setTextColor(150,150,150);
+  pdf.text('ID encoded', rnX, curY+15.5);
+  curY += 14;
+
+  // Info line: Fan, Sinf, Tur, Sana
+  pdf.setFontSize(7.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(`${cfg.subject}`, lx, curY+4);
+  pdf.setFont('helvetica','normal');
+  pdf.text(`Sinf: ${cls.name}  |  ${cfg.name}  |  ${fmtD(cfg.date)}`, lx+22, curY+4);
+  curY += 7;
+
+  // Heavy separator line
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(1.2);
+  pdf.line(x+2, curY, x+w-2, curY); curY += 3;
+
+  // ─────────────────────────────────────────────
+  // OMR GRID — 3 columns, alignment marks every 10 rows
+  // ─────────────────────────────────────────────
+  const gridTop = curY;
+
+  for(let col=0;col<nCols;col++){
+    const cx = lx + col*colW;
+    let qy = gridTop;
+
+    // Column header: A B C D
+    pdf.setFontSize(7.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+    OPTS.forEach((o,oi)=>{
+      pdf.text(o, cx+numW+oi*bStep+bR, qy+3.5, {align:'center'});
+    });
+    qy += 5.5;
+
+    for(let row=0;row<rowsPerCol;row++){
+      const qNum = col*rowsPerCol + row + 1;
+      if(qNum > n) break;
+
+      // Every 8 rows: alignment mark (small solid square like in image)
+      const inColRow = row; // row within this column
+      if(inColRow>0 && inColRow%8===0){
+        // alignment mark on left of column
+        pdf.setFillColor(0,0,0);
+        pdf.rect(cx-2, qy+rowH/2-BK/2, BK, BK, 'F');
+        // alignment mark on right of column (only last col has right edge)
+        if(col===nCols-1){
+          pdf.rect(cx+colW-2, qy+rowH/2-BK/2, BK, BK, 'F');
+        }
+        // repeat header A B C D after mark
+        pdf.setFontSize(7); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+        OPTS.forEach((o,oi)=>{
+          pdf.text(o, cx+numW+oi*bStep+bR, qy+3, {align:'center'});
+        });
+        qy += 5;
+      }
+
+      const cy = qy + rowH/2;
+
+      // Question number
+      pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+      pdf.text(String(qNum), cx+numW-1, cy+2.5, {align:'right'});
+
+      // Bubbles
+      OPTS.forEach((_,oi)=>{
+        const bx = cx + numW + oi*bStep + bR;
+        pdf.setFillColor(255,255,255);
+        pdf.setDrawColor(0,0,0);
+        pdf.setLineWidth(0.7);
+        pdf.circle(bx, cy, bR, 'FD');
+      });
+      qy += rowH;
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // Bottom 4 corner marks (like image corners)
+  // ─────────────────────────────────────────────
+  const botY2 = y + h - 6;
+  [[x+1, y+1],[x+w-BK-1,y+1],[x+1,botY2],[x+w-BK-1,botY2]].forEach(([mx,my])=>{
+    pdf.setFillColor(0,0,0); pdf.rect(mx,my,BK,BK,'F');
   });
 
-  // ── Header ──
-  let hy = y + M + 3;
-  const hx = x + M + 2;
-  const hw = w - M*2 - 4;
+  // ─────────────────────────────────────────────
+  // Bottom bar: Ball + ID
+  // ─────────────────────────────────────────────
+  const footY = y + h - 13;
+  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.6);
+  pdf.line(x+4, footY, x+w-4, footY);
 
-  // ISM FAMILYA — avtomatik yoziladi (o'quvchi nomi)
-  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(80,80,80);
-  pdf.text('ISM FAMILYA:', hx, hy+3);
-  // Name printed in large bold text
-  pdf.setFontSize(11); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  const nameText = stu.name || '—';
-  pdf.text(nameText, hx+38, hy+3);
-  // underline
-  pdf.setLineWidth(0.4); pdf.setDrawColor(0,0,0);
-  pdf.line(hx+36, hy+4, hx+hw-2, hy+4);
-  hy += 9;
+  pdf.setFontSize(7.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  pdf.text(`Ball: _______ / ${totalMax.toFixed(1)}   Foiz: _______%`, lx, footY+5);
 
-  // Info row
-  pdf.setFontSize(8); pdf.setFont('helvetica','normal'); pdf.setTextColor(0,0,0);
-  pdf.text(`FAN: ${cfg.subject}`, hx, hy+3);
-  pdf.text(`SINF: ${cls.name}`, hx+hw*0.38, hy+3);
-  pdf.text(`TUR: ${cfg.name}`, hx, hy+8.5);
-  pdf.text(`SANA: ${fmtD(cfg.date)}`, hx+hw*0.38, hy+8.5);
-  hy += 13;
-
-  // Thick separator
-  pdf.setFillColor(0,0,0); pdf.rect(hx, hy, hw, 1.2, 'F'); hy += 4;
-
-  // ── OMR grid ──
-  const bottomBarH = 22;
-  const availH = (y + h) - bottomBarH - hy - 2;
-  const nCols = n <= 20 ? 2 : 3;
-  const rowsPerCol = Math.ceil(n / nCols);
-  const rowH = Math.max(7.5, Math.min(13.5, availH / (rowsPerCol + 1)));
-  const bR = Math.min(4.8, (rowH - 2.5) / 2);
-  const bStep = bR * 2 + 2.5;
-  const colW = hw / nCols;
-  const numW = 11;
-
-  // Column headers A B C D
-  pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(30,30,30);
-  for(let c=0;c<nCols;c++){
-    const cx = hx + c*colW;
-    if(c>0){
-      pdf.setDrawColor(180,180,180); pdf.setLineWidth(0.3);
-      pdf.line(cx-1, hy, cx-1, hy+availH);
-    }
-    OPTS.forEach((o,oi)=>{
-      pdf.text(o, cx+numW+oi*bStep+bR, hy+4, {align:'center'});
-    });
-  }
-  hy += 6;
-
-  // Question rows
-  for(let i=1;i<=n;i++){
-    const col = Math.floor((i-1)/rowsPerCol);
-    const row = (i-1) % rowsPerCol;
-    const cx = hx + col*colW;
-    const qy = hy + row*rowH + rowH*0.5;
-    if(row%2===0){
-      pdf.setFillColor(245,248,255);
-      pdf.rect(cx, qy-rowH*0.5+0.5, colW-2, rowH-1, 'F');
-    }
-    pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-    pdf.text(String(i), cx+numW-1, qy+2.5, {align:'right'});
-    const sc = getScore(i, cfg.blocks);
-    pdf.setFontSize(5.5); pdf.setTextColor(140,140,140);
-    pdf.text(`${sc}b`, cx+numW+1, qy-1.5);
-    OPTS.forEach((_,oi)=>{
-      const bx = cx + numW + oi*bStep + bR;
-      pdf.setFillColor(255,255,255);
-      pdf.setDrawColor(30,30,30);
-      pdf.setLineWidth(0.7);
-      pdf.circle(bx, qy, bR, 'FD');
-    });
-  }
-
-  // ── Bottom bar ──
-  const botY = y + h - bottomBarH;
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.8);
-  pdf.line(x+M, botY, x+w-M, botY);
-
-  // Left: ball / foiz
-  pdf.setFontSize(8.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(`Jami ball: ___________ / ${totalMax.toFixed(1)}`, hx, botY+7);
-  pdf.text(`Foiz: ___________ %`, hx, botY+15);
-
-  // ── ID zone (right side of bottom) — encoded dot matrix ──
-  const idZoneW = 50;
-  const idZoneH = bottomBarH - 3;
-  const izx = x + w - M - idZoneW - 1;
-  const izy = botY + 1;
-
-  // Box
-  pdf.setFillColor(255,255,255); pdf.rect(izx, izy, idZoneW, idZoneH, 'F');
-  pdf.setDrawColor(0,0,0); pdf.setLineWidth(0.7); pdf.rect(izx, izy, idZoneW, idZoneH, 'S');
-
-  // Label
-  pdf.setFontSize(6); pdf.setFont('helvetica','bold'); pdf.setTextColor(80,80,80);
-  pdf.text("O'QUVCHI ID", izx + idZoneW/2, izy + 3.5, {align:'center'});
-
-  // Big readable ID text — sayt bu matnni o'qiydi
-  pdf.setFontSize(15); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
-  pdf.text(idStr, izx + idZoneW/2, izy + idZoneH*0.52, {align:'center'});
-
-  // ── Encoded dot matrix from ID — skaner uchun ──
-  // Each character of ID is encoded as a row of 8 bits (dot = filled square)
-  const dotR = 1.1;    // dot radius mm
-  const dotGap = 2.6;  // gap between dots
-  const matCols = 8;   // bits per row
-  const matX = izx + 2;
-  const matBaseY = izy + idZoneH - 5; // bottom of ID zone
-
-  pdf.setFillColor(0,0,0);
-  for(let ci=0; ci<idStr.length && ci<5; ci++){
-    const charCode = idStr.charCodeAt(ci);
-    for(let bi=0; bi<matCols; bi++){
-      if(charCode & (1 << (matCols-1-bi))){
-        const dx = matX + bi*dotGap;
-        const dy = matBaseY - ci*dotGap;
-        pdf.rect(dx, dy, dotR*1.8, dotR*1.8, 'F');
-      }
-    }
-  }
-  // Row separator dots for alignment
-  pdf.setFontSize(5); pdf.setTextColor(160,160,160);
-  pdf.text('▪ encoded', izx+2, izy+idZoneH-1);
+  // ID large text on right
+  pdf.setFontSize(11); pdf.setFont('helvetica','bold');
+  pdf.text(idStr, x+w-20, footY+5, {align:'center'});
+  pdf.setFontSize(5.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,100,100);
+  pdf.text("ID", x+w-20, footY+9, {align:'center'});
 }
 
 // ════════════════════════════════════════════════
