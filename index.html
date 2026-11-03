@@ -39,6 +39,7 @@ window.dispatchEvent(new Event('db-ready'));
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{--p:#1a73e8;--pd:#1557b0;--ps:#e8f0fe;--g:#34a853;--r:#ea4335;--y:#fbbc04;
   --bg:#f0f4ff;--card:#fff;--txt:#202124;--m:#5f6368;--bd:#dadce0;--rad:12px;--sh:0 2px 14px rgba(0,0,0,.08)}
@@ -83,12 +84,11 @@ textarea{resize:vertical;min-height:70px}
 .ac span{font-size:11px;color:var(--m);font-weight:700}
 .ac input{width:54px;text-align:center;padding:7px 2px;font-size:15px;font-weight:700;border-radius:7px}
 .scan-wrap{background:#000;border-radius:10px;overflow:hidden;position:relative;
-  min-height:240px;display:flex;align-items:center;justify-content:center}
+  min-height:300px;display:flex;align-items:center;justify-content:center}
 .scan-wrap video{width:100%;display:block}
-.sf{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:220px;height:160px;border:3px solid #00ff88;border-radius:6px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
-.sl2{position:absolute;top:0;left:0;right:0;height:2px;
+.sf{position:absolute;inset:8px;border:3px solid #00ff88;border-radius:8px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.35)}
+.sl2{position:absolute;top:0;left:0;right:0;height:3px;
   background:linear-gradient(90deg,transparent,#00ff88,transparent);
   animation:sc 1.8s linear infinite}
 @keyframes sc{0%{top:0}100%{top:100%}}
@@ -839,34 +839,41 @@ function printOMRTest(clsId, testId) {
 }
 
 function genOMRPdf(cfg, cls, stus) {
-  const {jsPDF} = window.jspdf;
-  const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
-  // 2 ta o'quvchi bitta A4 da (yuqori va pastki yarmi)
-  const pageW = 210, pageH = 297;
-  const marginX = 3, marginY = 3;
-  const cardW = pageW - marginX*2;
-  const cardH = (pageH - marginY*3) / 2; // A4 ni 2 ga bo'l
-
-  stus.forEach((stu, i) => {
-    const pairIdx = Math.floor(i / 2);
-    const slot = i % 2; // 0=top, 1=bottom
-    if (i > 0 && slot === 0) pdf.addPage();
-    const cardX = marginX;
-    const cardY = slot === 0 ? marginY : marginY*2 + cardH;
-    drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH);
-    // divider line between two cards
-    if (slot === 0) {
-      pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
-      pdf.setLineDashPattern([2,2], 0);
-      pdf.line(marginX, marginY+cardH+marginY/2, pageW-marginX, marginY+cardH+marginY/2);
-      pdf.setLineDashPattern([], 0);
-    }
+  // QR kod canvas yaratish (async), keyin PDF
+  const qrPromises = stus.map(stu => {
+    return new Promise(resolve => {
+      const canvas = document.createElement('canvas');
+      const qrData = JSON.stringify({id: stu.id, name: stu.name, cls: cls.name, test: cfg.name});
+      QRCode.toCanvas(canvas, qrData, {width:80, margin:1, color:{dark:'#000',light:'#fff'}}, err => {
+        resolve(err ? null : canvas.toDataURL('image/png'));
+      });
+    });
   });
-  pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
-  toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
+  Promise.all(qrPromises).then(qrImages => {
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF({format:'a4', orientation:'portrait', unit:'mm'});
+    const pageW=210, pageH=297, mX=3, mY=3;
+    const cardW = pageW - mX*2;
+    const cardH = (pageH - mY*3) / 2;
+    stus.forEach((stu, i) => {
+      const slot = i % 2;
+      if (i > 0 && slot === 0) pdf.addPage();
+      const cardX = mX;
+      const cardY = slot === 0 ? mY : mY*2 + cardH;
+      drawOMR(pdf, cfg, cls, stu, cardX, cardY, cardW, cardH, qrImages[i]);
+      if (slot === 0) {
+        pdf.setDrawColor(150,150,150); pdf.setLineWidth(0.4);
+        pdf.setLineDashPattern([2,2], 0);
+        pdf.line(mX, mY+cardH+mY/2, pageW-mX, mY+cardH+mY/2);
+        pdf.setLineDashPattern([], 0);
+      }
+    });
+    pdf.save(`titul-${cls.name}-${cfg.name}.pdf`);
+    toast(`✓ ${stus.length} ta titul (${Math.ceil(stus.length/2)} bet)`);
+  });
 }
 
-function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
+function drawOMR(pdf, cfg, cls, stu, x, y, w, h, qrDataUrl) {
   // Xuddi rasmga o'xshash: 3 ustun, Roll No katak grid + 0-9 doira,
   // Subject/Section matni, har group da ■ alignment square, A B C D sarlavha
   const n = cfg.count;
@@ -953,15 +960,21 @@ function drawOMR(pdf, cfg, cls, stu, x, y, w, h) {
   sq(x + w - SQ - 1, c1y + 1);
   c1y += 18; // kattaroq Roll No uchun ko'proq joy
 
-  // 0-9 digit bubble rows (Roll No belgilash — rasmga o'xshash)
-  abcdHeader(c1x + SQ + 1, c1y);
-  c1y += 4.5;
-  for(let d=0;d<10;d++){
-    if(d===3) { alignRow(c1x+SQ+1, c1y, false); } // ■ after row 3
-    if(d===8) { alignRow(c1x+SQ+1, c1y, false); } // ■ after row 8
-    bubbleRow(d, c1x + SQ + 1, c1y);
-    c1y += rowH;
+  // QR kod (o'ng tomonda, Roll No yonida) — skaner shu QR ni o'qiydi
+  if (qrDataUrl) {
+    const qrSize = 22;
+    const qrX = x + w - qrSize - 4;
+    const qrY = c1y - 16;
+    pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+    pdf.setFontSize(5.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80);
+    pdf.text('QR — skanerlang', qrX + qrSize/2, qrY + qrSize + 3, {align:'center'});
   }
+
+  // O'quvchi ismi
+  pdf.setFontSize(8); pdf.setFont('helvetica','bold'); pdf.setTextColor(0,0,0);
+  const shortName = stu.name.length > 28 ? stu.name.substring(0,26)+'…' : stu.name;
+  pdf.text(shortName, c1x + SQ + 1, c1y + 4);
+  c1y += 8;
 
   // Subject / Section label
   c1y += 2;
